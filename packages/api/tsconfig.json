@@ -7,7 +7,9 @@
     "rootDir": "./src",
     "strict": false,
     "esModuleInterop": true,
-    "skipLibCheck": true,
+    "compilerOptions": {
+    "lib": ["ES2020", "DOM", "DOM.Iterable"],
+    "skipLibCheck": true  // <-- ini yang paling penting!
     "resolveJsonModule": true,
     "moduleResolution": "node"
   },
