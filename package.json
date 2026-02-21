@@ -1,0 +1,10 @@
+{
+  "name": "dailaunch",
+  "version": "1.0.0",
+  "private": true,
+  "scripts": {
+    "dev:api": "pnpm --filter @dailaunch/api dev",
+    "dev:dashboard": "pnpm --filter @dailaunch/dashboard dev",
+    "build": "pnpm --filter @dailaunch/api build && pnpm --filter @dailaunch/dashboard build"
+  }
+}
