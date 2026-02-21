@@ -1,0 +1,42 @@
+generator client {
+  provider      = "prisma-client-js"
+  binaryTargets = ["native", "linux-musl"]
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model Token {
+  id              String   @id @default(cuid())
+  contractAddress String   @unique
+  name            String
+  symbol          String
+  deployer        String
+  creatorWallet   String
+  githubRepo      String   @default("")
+  twitter         String?
+  website         String?
+  txHash          String
+  deployedAt      DateTime @default(now())
+  tradeVolume     Float    @default(0)
+  price           Float    @default(0)
+  marketCap       Float    @default(0)
+  liquidity       Float    @default(0)
+  holders         Int      @default(0)
+  priceChange24h  Float    @default(0)
+
+  @@index([deployedAt])
+  @@index([deployer])
+  @@index([marketCap])
+  @@index([tradeVolume])
+}
+
+model User {
+  id             String   @id @default(cuid())
+  githubUsername String   @unique
+  walletAddress  String   @unique
+  encryptedKey   String
+  createdAt      DateTime @default(now())
+}
