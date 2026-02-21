@@ -1,4 +1,4 @@
-import { Clanker } from 'clanker-sdk';
+import { Clanker } from 'clanker-sdk/v4';
 import { createWalletClient, createPublicClient, http } from 'viem';
 import { privateKeyToAccount } from 'viem/accounts';
 import { base } from 'viem/chains';
