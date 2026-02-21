@@ -1,11 +1,16 @@
 import { getStats, getTokens } from '@/lib/api';
 import DashboardClient from '@/components/DashboardClient';
 
-export default async function HomePage() {
-  const [stats, tokensData] = await Promise.all([
-    getStats(),
-    getTokens(1, 'new'),
-  ]);
+export const dynamic = 'force-dynamic';
 
-  return <DashboardClient initialStats={stats} initialTokens={tokensData.tokens} />;
+export default async function HomePage() {
+  try {
+    const [stats, tokensData] = await Promise.all([
+      getStats(),
+      getTokens(1, 'new'),
+    ]);
+    return <DashboardClient initialStats={stats} initialTokens={tokensData?.tokens ?? []} />;
+  } catch {
+    return <DashboardClient initialStats={{ totalTokens: 0, totalVolume: 0, totalMarketCap: 0, deployedToday: 0 }} initialTokens={[]} />;
+  }
 }
