@@ -3,7 +3,6 @@ import { createWalletClient, createPublicClient, http } from 'viem';
 import { privateKeyToAccount } from 'viem/accounts';
 import { base } from 'viem/chains';
 
-// ── Platform wallet setup ─────────────────────────────────────────────────────
 const account = privateKeyToAccount(
   process.env.PLATFORM_PRIVATE_KEY as `0x${string}`
 );
@@ -21,7 +20,6 @@ const wallet = createWalletClient({
 
 const clanker = new Clanker({ publicClient: publicClient as any, wallet });
 
-// ── Types ─────────────────────────────────────────────────────────────────────
 export interface DeployParams {
   name: string;
   symbol: string;
@@ -36,13 +34,12 @@ export interface DeployResult {
   txHash: string;
 }
 
-// ── Deploy token via Clanker SDK ─────────────────────────────────────────────
 export async function deployTokenViaClanker(params: DeployParams): Promise<DeployResult> {
   const socialUrls: { platform: string; url: string }[] = [];
   if (params.twitter) socialUrls.push({ platform: 'twitter', url: params.twitter });
   if (params.website) socialUrls.push({ platform: 'web', url: params.website });
 
-  const { txHash, waitForTransaction, error } = await clanker.deploy({
+  const deployParams: any = {
     name: params.name,
     symbol: params.symbol,
     tokenAdmin: account.address,
@@ -65,7 +62,9 @@ export async function deployTokenViaClanker(params: DeployParams): Promise<Deplo
       interfaceAdmin: process.env.PLATFORM_WALLET_ADDRESS as `0x${string}`,
       interfaceRewardRecipient: process.env.PLATFORM_WALLET_ADDRESS as `0x${string}`,
     },
-  });
+  };
+
+  const { txHash, waitForTransaction, error } = await clanker.deploy(deployParams);
 
   if (error) throw new Error(`Clanker deploy failed: ${error.message}`);
 
