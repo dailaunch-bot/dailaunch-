@@ -1,10 +1,10 @@
 import { Router, Request, Response } from 'express';
 import { PrismaClient } from '@prisma/client';
 import { Octokit } from '@octokit/rest';
-import { deployTokenViaClanker } from '../services/clanker';
-import { saveTokenToGitHub } from '../services/github';
-import { generateWallet, encryptKey } from '../services/wallet';
-import { verifyGitHub } from '../middleware/auth';
+import { deployTokenViaClanker } from '../services/clanker.js';
+import { saveTokenToGitHub } from '../services/github.js';
+import { generateWallet, encryptKey } from '../services/wallet.js';
+import { verifyGitHub } from '../middleware/auth.js';
 
 const router = Router();
 const prisma = new PrismaClient();
@@ -15,7 +15,6 @@ router.post('/', verifyGitHub, async (req: Request, res: Response) => {
   const ghUser = (req as any).githubUser;
   const octokit = (req as any).octokit as Octokit;
 
-  // Validasi input
   if (!name || !symbol) {
     return res.status(400).json({ error: 'name and symbol are required' });
   }
@@ -24,7 +23,6 @@ router.post('/', verifyGitHub, async (req: Request, res: Response) => {
   }
 
   try {
-    // 1. Ambil atau buat wallet creator untuk user ini
     let user = await prisma.user.findUnique({
       where: { githubUsername: ghUser.login },
     });
@@ -40,7 +38,6 @@ router.post('/', verifyGitHub, async (req: Request, res: Response) => {
       });
     }
 
-    // 2. Deploy token via Clanker SDK
     console.log(`Deploying ${name} (${symbol}) for @${ghUser.login}...`);
     const deployResult = await deployTokenViaClanker({
       name,
@@ -52,7 +49,6 @@ router.post('/', verifyGitHub, async (req: Request, res: Response) => {
     });
     console.log(`Deployed: ${deployResult.contractAddress}`);
 
-    // 3. Simpan ke database
     const token = await prisma.token.create({
       data: {
         contractAddress: deployResult.contractAddress,
@@ -67,7 +63,6 @@ router.post('/', verifyGitHub, async (req: Request, res: Response) => {
       },
     });
 
-    // 4. Simpan token info ke GitHub repo user
     const repoUrl = await saveTokenToGitHub({
       octokit,
       githubUser: ghUser.login,
@@ -80,7 +75,6 @@ router.post('/', verifyGitHub, async (req: Request, res: Response) => {
       website,
     });
 
-    // 5. Update githubRepo di database
     await prisma.token.update({
       where: { id: token.id },
       data: { githubRepo: repoUrl },
