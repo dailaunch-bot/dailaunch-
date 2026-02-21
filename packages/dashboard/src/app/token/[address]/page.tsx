@@ -2,6 +2,8 @@ import { getToken } from '@/lib/api';
 import { notFound } from 'next/navigation';
 import TokenDetailClient from '@/components/TokenDetailClient';
 
+export const dynamic = 'force-dynamic';
+
 export default async function TokenPage({
   params,
 }: {
