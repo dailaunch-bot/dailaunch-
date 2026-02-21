@@ -113,24 +113,20 @@ export default function DashboardClient({ initialStats, initialTokens }: Props) 
 
   return (
     <div style={{ minHeight: "100vh", background: "#04060f" }}>
-      {/* Header */}
-      <header style={{ borderBottom: "1px solid rgba(34,211,165,0.1)", background: "rgba(4,6,15,0.95)", backdropFilter: "blur(10px)", position: "sticky", top: 0, zIndex: 50 }}>
+      <header style={{ borderBottom: "1px solid rgba(34,211,165,0.1)", background: "rgba(4,6,15,0.95)", position: "sticky", top: 0, zIndex: 50 }}>
         <div style={{ maxWidth: 1280, margin: "0 auto", padding: "16px 24px", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
           <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
             <span style={{ fontSize: 28 }}>⚡</span>
             <div>
-              <h1 style={{ fontSize: 20, fontWeight: 800, color: "#22d3a5", letterSpacing: "-0.5px" }}>DaiLaunch</h1>
+              <h1 style={{ fontSize: 20, fontWeight: 800, color: "#22d3a5" }}>DaiLaunch</h1>
               <p style={{ fontSize: 11, color: "#475569" }}>Deploy tokens from GitHub commits</p>
             </div>
           </div>
-          <div style={{ fontSize: 13, color: "#22d3a5", background: "rgba(34,211,165,0.05)", border: "1px solid rgba(34,211,165,0.15)", padding: "6px 14px", borderRadius: 20 }}>
-            🟢 Live
-          </div>
+          <div style={{ fontSize: 13, color: "#22d3a5", background: "rgba(34,211,165,0.05)", border: "1px solid rgba(34,211,165,0.15)", padding: "6px 14px", borderRadius: 20 }}>🟢 Live</div>
         </div>
       </header>
 
       <main style={{ maxWidth: 1280, margin: "0 auto", padding: "32px 24px" }}>
-        {/* Stats Grid */}
         <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 12, marginBottom: 32 }}>
           {[
             { label: "Total Tokens", value: stats.totalTokens?.toLocaleString() ?? "0", icon: "🪙" },
@@ -146,32 +142,22 @@ export default function DashboardClient({ initialStats, initialTokens }: Props) 
           ))}
         </div>
 
-        {/* Search + Sort */}
         <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 20, flexWrap: "wrap", gap: 12 }}>
           <form onSubmit={handleSearch} style={{ display: "flex", gap: 8 }}>
-            <input
-              type="text"
-              placeholder="Search name or symbol…"
-              value={searchInput}
-              onChange={(e) => setSearchInput(e.target.value)}
-              style={{ background: "rgba(255,255,255,0.04)", border: "1px solid rgba(34,211,165,0.15)", borderRadius: 8, padding: "8px 14px", color: "#e2e8f0", fontSize: 14, outline: "none", width: 240 }}
-            />
-            <button type="submit" style={{ background: "rgba(34,211,165,0.1)", border: "1px solid rgba(34,211,165,0.2)", color: "#22d3a5", borderRadius: 8, padding: "8px 16px", fontSize: 14, cursor: "pointer" }}>
-              Search
-            </button>
+            <input type="text" placeholder="Search name or symbol…" value={searchInput} onChange={(e) => setSearchInput(e.target.value)} style={{ background: "rgba(255,255,255,0.04)", border: "1px solid rgba(34,211,165,0.15)", borderRadius: 8, padding: "8px 14px", color: "#e2e8f0", fontSize: 14, outline: "none", width: 240 }} />
+            <button type="submit" style={{ background: "rgba(34,211,165,0.1)", border: "1px solid rgba(34,211,165,0.2)", color: "#22d3a5", borderRadius: 8, padding: "8px 16px", fontSize: 14, cursor: "pointer" }}>Search</button>
           </form>
           <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
             {SORT_OPTIONS.map((o) => (
-              <button key={o.value} onClick={() => handleSort(o.value)} style={{ background: sort === o.value ? "rgba(34,211,165,0.15)" : "rgba(255,255,255,0.03)", border: `1px solid ${sort === o.value ? "rgba(34,211,165,0.4)" : "rgba(255,255,255,0.06)"}`, color: sort === o.value ? "#22d3a5" : "#64748b", borderRadius: 20, padding: "6px 14px", fontSize: 13, cursor: "pointer", fontWeight: sort === o.value ? 600 : 400 }}>
+              <button key={o.value} onClick={() => handleSort(o.value)} style={{ background: sort === o.value ? "rgba(34,211,165,0.15)" : "rgba(255,255,255,0.03)", border: `1px solid ${sort === o.value ? "rgba(34,211,165,0.4)" : "rgba(255,255,255,0.06)"}`, color: sort === o.value ? "#22d3a5" : "#64748b", borderRadius: 20, padding: "6px 14px", fontSize: 13, cursor: "pointer" }}>
                 {o.label}
               </button>
             ))}
           </div>
         </div>
 
-        {/* Token Table */}
         <div style={{ background: "rgba(255,255,255,0.02)", border: "1px solid rgba(255,255,255,0.06)", borderRadius: 16, overflow: "hidden" }}>
-          <div style={{ display: "grid", gridTemplateColumns: "2fr 1fr 1fr 1fr 1fr 1fr", padding: "12px 20px", borderBottom: "1px solid rgba(255,255,255,0.05)", fontSize: 12, color: "#475569", fontWeight: 600, textTransform: "uppercase" as const, letterSpacing: "0.5px" }}>
+          <div style={{ display: "grid", gridTemplateColumns: "2fr 1fr 1fr 1fr 1fr 1fr", padding: "12px 20px", borderBottom: "1px solid rgba(255,255,255,0.05)", fontSize: 12, color: "#475569", fontWeight: 600, textTransform: "uppercase" as const }}>
             <span>Token</span>
             <span style={{ textAlign: "right" as const }}>Price</span>
             <span style={{ textAlign: "right" as const }}>24h</span>
@@ -179,39 +165,23 @@ export default function DashboardClient({ initialStats, initialTokens }: Props) 
             <span style={{ textAlign: "right" as const }}>Volume</span>
             <span style={{ textAlign: "right" as const }}>Age</span>
           </div>
-
           {loading ? (
-            <div style={{ padding: 60, textAlign: "center" as const, color: "#475569" }}>
-              <div style={{ fontSize: 32, marginBottom: 12 }}>⏳</div>
-              Loading tokens…
-            </div>
+            <div style={{ padding: 60, textAlign: "center" as const, color: "#475569" }}>⏳ Loading…</div>
           ) : tokens.length === 0 ? (
-            <div style={{ padding: 60, textAlign: "center" as const, color: "#475569" }}>
-              <div style={{ fontSize: 32, marginBottom: 12 }}>🔍</div>
-              No tokens found
-            </div>
+            <div style={{ padding: 60, textAlign: "center" as const, color: "#475569" }}>🔍 No tokens found</div>
           ) : (
             tokens.map((token, i) => {
               const change = token.priceChange24h ?? 0;
               const isUp = change >= 0;
               return (
-                <div
-                  key={token.id}
-                  onClick={() => router.push(`/token/${token.contractAddress}`)}
-                  style={{ display: "grid", gridTemplateColumns: "2fr 1fr 1fr 1fr 1fr 1fr", padding: "14px 20px", borderBottom: i < tokens.length - 1 ? "1px solid rgba(255,255,255,0.04)" : "none", cursor: "pointer", alignItems: "center" }}
-                  onMouseEnter={(e) => (e.currentTarget.style.background = "rgba(34,211,165,0.04)")}
-                  onMouseLeave={(e) => (e.currentTarget.style.background = "transparent")}
-                >
+                <div key={token.id} onClick={() => router.push(`/token/${token.contractAddress}`)} style={{ display: "grid", gridTemplateColumns: "2fr 1fr 1fr 1fr 1fr 1fr", padding: "14px 20px", borderBottom: i < tokens.length - 1 ? "1px solid rgba(255,255,255,0.04)" : "none", cursor: "pointer", alignItems: "center" }} onMouseEnter={(e) => (e.currentTarget.style.background = "rgba(34,211,165,0.04)")} onMouseLeave={(e) => (e.currentTarget.style.background = "transparent")}>
                   <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
-                    <div style={{ width: 36, height: 36, borderRadius: "50%", background: `hsl(${(token.contractAddress.charCodeAt(2) ?? 0) * 5 % 360}, 60%, 25%)`, border: "1px solid rgba(255,255,255,0.1)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 14, fontWeight: 700, color: "#e2e8f0", flexShrink: 0 }}>
+                    <div style={{ width: 36, height: 36, borderRadius: "50%", background: `hsl(${(token.contractAddress.charCodeAt(2) ?? 0) * 5 % 360}, 60%, 25%)`, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 14, fontWeight: 700, color: "#e2e8f0" }}>
                       {token.symbol?.[0] ?? "?"}
                     </div>
                     <div>
                       <div style={{ fontWeight: 600, color: "#e2e8f0", fontSize: 14 }}>{token.name}</div>
-                      <div style={{ fontSize: 12, color: "#475569" }}>
-                        {token.symbol} · {shortAddr(token.contractAddress)}
-                        {token.githubRepo && <span style={{ marginLeft: 6, color: "#22d3a5", opacity: 0.6 }}>⌥ GH</span>}
-                      </div>
+                      <div style={{ fontSize: 12, color: "#475569" }}>{token.symbol} · {shortAddr(token.contractAddress)}</div>
                     </div>
                   </div>
                   <div style={{ textAlign: "right" as const, fontSize: 14, color: "#e2e8f0" }}>{token.price > 0 ? `$${token.price.toFixed(6)}` : "—"}</div>
@@ -225,7 +195,6 @@ export default function DashboardClient({ initialStats, initialTokens }: Props) 
           )}
         </div>
 
-        {/* Pagination */}
         {tokens.length > 0 && (
           <div style={{ display: "flex", justifyContent: "center", gap: 12, marginTop: 24 }}>
             <button onClick={handlePrev} disabled={page === 1} style={{ background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.08)", color: page === 1 ? "#334155" : "#94a3b8", borderRadius: 8, padding: "8px 18px", fontSize: 13, cursor: page === 1 ? "not-allowed" : "pointer" }}>← Prev</button>
