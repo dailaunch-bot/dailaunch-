@@ -1,6 +1,6 @@
 import { Router, Request, Response } from 'express';
 import { PrismaClient } from '@prisma/client';
-import { verifyGitHub } from '../middleware/auth';
+import { verifyGitHub } from '../middleware/auth.js';
 
 const router = Router();
 const prisma = new PrismaClient();
@@ -18,7 +18,6 @@ router.get('/me', verifyGitHub, async (req: Request, res: Response) => {
     return res.status(404).json({ error: 'User not found. Deploy a token first.' });
   }
 
-  // Ambil semua token milik user ini
   const tokens = await prisma.token.findMany({
     where: { deployer: ghUser.login },
     select: {
