@@ -1,7 +1,6 @@
 {
   "name": "@dailaunch/api",
   "version": "1.0.0",
-  "type": "module",
   "private": true,
   "scripts": {
     "dev": "nodemon --exec ts-node src/index.ts",
@@ -29,8 +28,9 @@
     "prisma": "^5.0.0",
     "ts-node": "^10.0.0",
     "typescript": "^5.0.0"
-  },
-  "prisma": {
-    "schema": "prisma/schema.prisma"
   }
 }
+```
+
+Dan Start Command di Railway ganti ke:
+```
