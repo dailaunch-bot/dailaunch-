@@ -3,8 +3,9 @@ WORKDIR /app
 COPY package*.json ./
 COPY prisma ./prisma/
 RUN npm install
+RUN npm install esbuild --save-dev
 COPY . .
 RUN npx prisma generate
-RUN npx tsc --skipLibCheck --noCheck --module Node16 --moduleResolution Node16 --target ES2022 --lib ES2022,DOM,DOM.Iterable --outDir ./dist --esModuleInterop --resolveJsonModule
+RUN npx esbuild src/index.ts --bundle=false --platform=node --target=node20 --outdir=dist --format=cjs
 EXPOSE 3001
 CMD ["node", "dist/index.js"]
