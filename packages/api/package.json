@@ -1,6 +1,7 @@
 {
   "name": "@dailaunch/api",
   "version": "1.0.0",
+  "type": "module",
   "private": true,
   "scripts": {
     "dev": "nodemon --exec ts-node src/index.ts",
