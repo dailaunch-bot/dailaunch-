@@ -3,9 +3,8 @@ WORKDIR /app
 COPY package*.json ./
 COPY prisma ./prisma/
 RUN npm install
-RUN npm install -g ts-node typescript
 COPY . .
 RUN npx prisma generate
-RUN npx ts-node --transpile-only --esm src/index.ts &
+RUN npx tsc --skipLibCheck --module commonjs --moduleResolution node --target ES2020 --outDir ./dist --esModuleInterop --resolveJsonModule --lib ES2020
 EXPOSE 3001
-CMD ["npx", "ts-node", "--transpile-only", "--esm", "src/index.ts"]
+CMD ["node", "dist/index.js"]
