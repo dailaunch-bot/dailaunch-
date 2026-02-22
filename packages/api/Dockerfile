@@ -1,11 +1,9 @@
 FROM node:20
 WORKDIR /app
-COPY package*.json ./
-COPY prisma ./prisma/
+COPY packages/api/package*.json ./
+COPY packages/api/prisma ./prisma/
 RUN npm install
-COPY . .
-RUN cat prisma/schema.prisma
+COPY packages/api/ .
 RUN npx prisma generate
 EXPOSE 3001
 CMD ["npx", "ts-node", "--transpile-only", "src/index.ts"]
-RUN npm install --prefer-offline=false
