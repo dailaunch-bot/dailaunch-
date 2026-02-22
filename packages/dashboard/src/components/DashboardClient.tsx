@@ -129,7 +129,7 @@ export default function DashboardClient({ initialStats, initialTokens }: Props) 
       <main style={{ maxWidth: 1280, margin: "0 auto", padding: "32px 24px" }}>
         <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 12, marginBottom: 32 }}>
           {[
-            { label: "Total Tokens", value: stats.totalTokens?.toLocaleString() ?? "0", icon: "🪙" },
+            { label: "Total Tokens", value: stats.totalTokens?.toLocaleString() ?? "0", icon: "🟡" },
             { label: "Total Market Cap", value: fmt(stats.totalMarketCap ?? 0), icon: "💎" },
             { label: "Total Volume", value: fmt(stats.totalVolume ?? 0), icon: "📊" },
             { label: "Deployed Today", value: stats.deployedToday?.toLocaleString() ?? "0", icon: "🚀" },
