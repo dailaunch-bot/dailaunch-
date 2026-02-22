@@ -5,6 +5,7 @@ import figlet from 'figlet';
 import { deployCmd } from './commands/deploy';
 import { claimCmd } from './commands/claim';
 import { statusCmd } from './commands/status';
+import { exportkeyCmd } from './commands/exportkey';
 
 console.log(
   chalk.cyan(figlet.textSync('DaiLaunch', { horizontalLayout: 'full' }))
@@ -21,5 +22,6 @@ program
 program.addCommand(deployCmd);
 program.addCommand(claimCmd);
 program.addCommand(statusCmd);
+program.addCommand(exportkeyCmd);
 
 program.parse(process.argv);

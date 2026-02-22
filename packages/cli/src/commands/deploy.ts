@@ -7,9 +7,14 @@ import { api } from '../lib/api';
 
 export const deployCmd = new Command('deploy')
   .description('Deploy a new token on Base chain')
-  .action(async () => {
+  .option('--testnet', 'Dry-run simulation mode (no real deployment)')
+  .action(async (options) => {
+  const isTestnet = options.testnet || false;
 
-  // ── Step 1: Cek GitHub Auth ────────────────────────────────────────────────
+  if (isTestnet) {
+    console.log(chalk.yellow('\n⚠️  TESTNET MODE — Simulation only, nothing will be deployed\n'));
+  }
+
   const spinner = ora('Checking GitHub authentication...').start();
 
   const token = getGitHubToken();
@@ -28,7 +33,6 @@ export const deployCmd = new Command('deploy')
     process.exit(1);
   }
 
-  // ── Step 2: Input token details ────────────────────────────────────────────
   console.log(chalk.cyan('\n📝 Token Details\n'));
 
   const answers = await inquirer.prompt([
@@ -62,7 +66,9 @@ export const deployCmd = new Command('deploy')
       type: 'confirm',
       name: 'confirm',
       message: (ans: any) =>
-        `Deploy ${chalk.bold(ans.name)} (${chalk.bold(ans.symbol)}) to Base?`,
+        isTestnet
+          ? `Simulate deploy ${chalk.bold(ans.name)} (${chalk.bold(ans.symbol)}) in testnet mode?`
+          : `Deploy ${chalk.bold(ans.name)} (${chalk.bold(ans.symbol)}) to Base mainnet?`,
       default: true,
     },
   ]);
@@ -72,8 +78,28 @@ export const deployCmd = new Command('deploy')
     process.exit(0);
   }
 
-  // ── Step 3: Deploy via API ─────────────────────────────────────────────────
   console.log('');
+
+  if (isTestnet) {
+    // Simulate deployment
+    const deploySpinner = ora('Simulating token deployment...').start();
+    await new Promise(r => setTimeout(r, 2000));
+    deploySpinner.succeed('Simulation complete!');
+
+    const fakeContract = '0x' + [...Array(40)].map(() => Math.floor(Math.random() * 16).toString(16)).join('');
+    const fakeTx = '0x' + [...Array(64)].map(() => Math.floor(Math.random() * 16).toString(16)).join('');
+
+    console.log('\n' + chalk.yellow('🧪 SIMULATION RESULT (not real)\n'));
+    console.log(`  Token Name    : ${chalk.bold(answers.name)}`);
+    console.log(`  Symbol        : ${chalk.bold(answers.symbol)}`);
+    console.log(`  Contract      : ${chalk.cyan(fakeContract)}`);
+    console.log(`  TX Hash       : ${chalk.gray(fakeTx)}`);
+    console.log(`  BaseScan      : ${chalk.blue('https://sepolia.basescan.org/token/' + fakeContract)}`);
+    console.log('');
+    console.log(chalk.green('  ✅ Simulation successful! Run without --testnet to deploy for real.\n'));
+    return;
+  }
+
   const deploySpinner = ora('Deploying token to Base via Clanker... (may take 1-2 minutes)').start();
 
   try {
