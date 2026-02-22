@@ -8,3 +8,4 @@ RUN cat prisma/schema.prisma
 RUN npx prisma generate
 EXPOSE 3001
 CMD ["npx", "ts-node", "--transpile-only", "src/index.ts"]
+RUN npm install --prefer-offline=false
