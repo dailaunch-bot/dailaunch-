@@ -1,10 +1,10 @@
 import { Router, Request, Response } from 'express';
 import { PrismaClient } from '@prisma/client';
 import { Octokit } from '@octokit/rest';
-import { deployTokenViaClanker } from '../services/clanker.js';
-import { saveTokenToGitHub } from '../services/github.js';
-import { generateWallet, encryptKey } from '../services/wallet.js';
-import { verifyGitHub } from '../middleware/auth.js';
+import { deployTokenViaClanker } from '../services/clanker';
+import { saveTokenToGitHub } from '../services/github';
+import { generateWallet, encryptKey } from '../services/wallet';
+import { verifyGitHub } from '../middleware/auth';
 
 const router = Router();
 const prisma = new PrismaClient();
