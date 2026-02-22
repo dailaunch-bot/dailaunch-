@@ -32,7 +32,7 @@ router.get('/me', verifyGitHub, async (req: Request, res: Response) => {
       createdAt: user.createdAt,
       tokens,
       totalTokens: tokens.length,
-      baseScanWallet: https://basescan.org/address/,
+      baseScanWallet: 'https://basescan.org/address/' + user.walletAddress,
     });
   } catch (error) {
     console.error('Error fetching user:', error);
