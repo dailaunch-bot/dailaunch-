@@ -2,11 +2,11 @@ import express from 'express';
 import cors from 'cors';
 import helmet from 'helmet';
 import 'dotenv/config';
-import deployRouter from './routes/deploy.js';
-import tokensRouter from './routes/tokens.js';
-import statsRouter  from './routes/stats.js';
-import userRouter   from './routes/user.js';
-import { startIndexer } from './services/indexer.js';
+import deployRouter from './routes/deploy';
+import tokensRouter from './routes/tokens';
+import statsRouter  from './routes/stats';
+import userRouter   from './routes/user';
+import { startIndexer } from './services/indexer';
 
 const app = express();
 
