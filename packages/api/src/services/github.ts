@@ -10,6 +10,7 @@ interface SaveTokenParams {
   txHash: string;
   twitter?: string;
   website?: string;
+logoUrl?: string;
 }
 
 export async function saveTokenToGitHub(params: SaveTokenParams): Promise<string> {
@@ -34,6 +35,7 @@ export async function saveTokenToGitHub(params: SaveTokenParams): Promise<string
     social: {
       twitter: params.twitter || null,
       website: params.website || null,
+logo: params.logoUrl || null,
     },
     deployedBy: params.githubUser,
     deployTxHash: params.txHash,
@@ -70,6 +72,7 @@ export async function saveTokenToGitHub(params: SaveTokenParams): Promise<string
 
 function buildReadme(params: SaveTokenParams): string {
   return `# ${params.name} (${params.symbol})
+${params.logoUrl ? `<p align="center"><img src="${params.logoUrl}" width="200" alt="${params.name} logo"/></p>\n` : ''}
 
 > Deployed via [DaiLaunch](https://dailaunch.xyz) on Base chain
 

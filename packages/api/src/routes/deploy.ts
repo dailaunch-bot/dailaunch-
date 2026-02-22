@@ -11,7 +11,7 @@ const prisma = new PrismaClient();
 
 // POST /api/deploy
 router.post('/', verifyGitHub, async (req: Request, res: Response) => {
-  const { name, symbol, twitter, website } = req.body;
+  const { name, symbol, twitter, website, logoUrl } = req.body;
   const ghUser = (req as any).githubUser;
   const octokit = (req as any).octokit as Octokit;
 
@@ -73,6 +73,7 @@ router.post('/', verifyGitHub, async (req: Request, res: Response) => {
       txHash: deployResult.txHash,
       twitter,
       website,
+logoUrl,
     });
 
     await prisma.token.update({

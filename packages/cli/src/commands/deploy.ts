@@ -62,6 +62,12 @@ export const deployCmd = new Command('deploy')
       message: 'Website URL (optional, press Enter to skip):',
       default: '',
     },
+{
+  type: 'input',
+  name: 'logoUrl',
+  message: 'Logo Image URL (optional, press Enter to skip):',
+  default: '',
+},
     {
       type: 'confirm',
       name: 'confirm',
@@ -95,6 +101,9 @@ export const deployCmd = new Command('deploy')
     console.log(`  Contract      : ${chalk.cyan(fakeContract)}`);
     console.log(`  TX Hash       : ${chalk.gray(fakeTx)}`);
     console.log(`  BaseScan      : ${chalk.blue('https://sepolia.basescan.org/token/' + fakeContract)}`);
+const fakeRepo = `https://github.com/${ghUser.login}/dailaunch-${answers.symbol.toLowerCase()}-${Date.now()}`;
+console.log(`  GitHub Repo   : ${chalk.cyan(fakeRepo)} (simulated)`);
+console.log(`  Token Info    : ${chalk.cyan(fakeRepo + '/blob/main/token-info.json')} (simulated)`);
     console.log('');
     console.log(chalk.green('  ✅ Simulation successful! Run without --testnet to deploy for real.\n'));
     return;
@@ -108,6 +117,7 @@ export const deployCmd = new Command('deploy')
       symbol:  answers.symbol,
       twitter: answers.twitter || undefined,
       website: answers.website || undefined,
+	logoUrl: answers.logoUrl || undefined,
     }, {
       headers: { 'x-github-token': token },
     });
