@@ -120,6 +120,8 @@ export const deployCmd = new Command('deploy')
     console.log(`  Contract      : ${chalk.cyan(data.contractAddress)}`);
     console.log(`  Creator Wallet: ${chalk.cyan(data.creatorWallet)}`);
     console.log(`  GitHub Repo   : ${chalk.cyan(data.githubRepo)}`);
+console.log(`  Token Info    : ${chalk.cyan(data.githubRepo + '/blob/main/token-info.json')}`);
+console.log(`  Token README  : ${chalk.cyan(data.githubRepo + '/blob/main/README.md')}`);
     console.log(`  TX Hash       : ${chalk.gray(data.txHash)}`);
     console.log(`  BaseScan      : ${chalk.blue(data.baseScan)}`);
     console.log(`  DexScreener   : ${chalk.blue(data.dexScreener)}`);
