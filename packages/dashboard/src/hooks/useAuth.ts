@@ -11,7 +11,7 @@ export interface AuthUser {
 }
 
 const STORAGE_KEY = "dailaunch_session";
-const API = process.env.NEXT_PUBLIC_API_URL || "https://api.dailaunch.online";
+const API = "https://api.dailaunch.online";
 
 export function useAuth() {
   const [user, setUser]       = useState<AuthUser | null>(null);
