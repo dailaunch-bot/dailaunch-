@@ -3,25 +3,8 @@ import { createWalletClient, createPublicClient, http } from 'viem';
 import { privateKeyToAccount } from 'viem/accounts';
 import { base } from 'viem/chains';
 
-// ─── Fee Configuration ────────────────────────────────────────────────────────
-//
-//  Clanker SDK menggunakan basis points (bps) untuk reward:
-//    10000 bps = 100%
-//
-//  Pembagian trading fee setiap swap:
-//    ┌─────────────────────────────────────────────────────┐
-//    │  90% (9000 bps) → Creator Wallet (deployer token)  │
-//    │  10% (1000 bps) → DaiLaunch Platform Wallet        │
-//    └─────────────────────────────────────────────────────┘
-//
-//  Catatan: Clanker protocol juga mengambil fee tersendiri
-//  (protocol fee) yang sudah otomatis dipotong sebelum
-//  reward creator/platform dibagikan.
-//
-// ─────────────────────────────────────────────────────────────────────────────
-
-const CREATOR_REWARD_PERCENT  = 90; // 90% trading fee → creator wallet
-const PLATFORM_REWARD_PERCENT = 10; // 10% trading fee → DaiLaunch platform
+const CREATOR_BPS  = 9_000; // 90%
+const PLATFORM_BPS = 1_000; // 10%
 
 const account = privateKeyToAccount(
   process.env.PLATFORM_PRIVATE_KEY as `0x${string}`
@@ -41,12 +24,12 @@ const wallet = createWalletClient({
 const clanker = new Clanker({ publicClient: publicClient as any, wallet });
 
 export interface DeployParams {
-  name:         string;
-  symbol:       string;
+  name:          string;
+  symbol:        string;
   creatorWallet: string;
-  twitter?:     string;
-  website?:     string;
-  githubUser:   string;
+  twitter?:      string;
+  website?:      string;
+  githubUser:    string;
 }
 
 export interface DeployResult {
@@ -65,9 +48,9 @@ export async function deployTokenViaClanker(params: DeployParams): Promise<Deplo
     tokenAdmin: account.address,
     image:      'ipfs://bafybeigdyrzt5sfp7udm7hu76uh7y26nf3efuylqabf3oclgtqy55fbzdi',
     metadata: {
-      description:    `Token deployed via DaiLaunch by @${params.githubUser}`,
+      description:     `Token deployed via DaiLaunch by @${params.githubUser}`,
       socialMediaUrls: socialUrls,
-      auditUrls:      [],
+      auditUrls:       [],
     },
     context: {
       interface: 'DaiLaunch',
@@ -75,18 +58,22 @@ export async function deployTokenViaClanker(params: DeployParams): Promise<Deplo
       messageId: '',
       id:        params.githubUser,
     },
-
-    // ── Fee Split ──────────────────────────────────────────────────────────
-    // creatorReward: 90 → 90% setiap trading fee ke creator wallet
-    // Sisa 10%         → otomatis ke interfaceRewardRecipient (DaiLaunch)
-    rewardsConfig: {
-      creatorReward:            CREATOR_REWARD_PERCENT,
-      creatorAdmin:             params.creatorWallet as `0x${string}`,
-      creatorRewardRecipient:   params.creatorWallet as `0x${string}`,
-      interfaceAdmin:           process.env.PLATFORM_WALLET_ADDRESS as `0x${string}`,
-      interfaceRewardRecipient: process.env.PLATFORM_WALLET_ADDRESS as `0x${string}`,
+    rewards: {
+      recipients: [
+        {
+          recipient: params.creatorWallet as `0x${string}`,
+          admin:     params.creatorWallet as `0x${string}`,
+          bps:       CREATOR_BPS,
+          token:     'Paired',
+        },
+        {
+          recipient: process.env.PLATFORM_WALLET_ADDRESS as `0x${string}`,
+          admin:     process.env.PLATFORM_WALLET_ADDRESS as `0x${string}`,
+          bps:       PLATFORM_BPS,
+          token:     'Paired',
+        },
+      ],
     },
-    // ──────────────────────────────────────────────────────────────────────
   };
 
   const { txHash, waitForTransaction, error } = await clanker.deploy(deployParams);
