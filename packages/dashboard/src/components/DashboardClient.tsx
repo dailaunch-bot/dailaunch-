@@ -2,7 +2,7 @@
 
 import { useState, useCallback, useRef, useEffect } from "react";
 import { useRouter } from "next/navigation";
-import { getTokens, deployToken, verifyJWT, getGitHubLoginUrl } from "@/lib/api";
+import { getTokens, deployToken } from "@/lib/api";
 
 // ── Types ──────────────────────────────────────────────────────────────────────
 interface Token {
@@ -13,7 +13,6 @@ interface Token {
   liquidity: number; holders: number; priceChange24h: number;
 }
 interface Stats { totalTokens: number; totalVolume: number; totalMarketCap: number; deployedToday: number; }
-interface GHUser { login: string; avatar: string; name: string; githubToken: string; }
 interface DeployResult { contractAddress: string; txHash: string; creatorWallet: string; githubRepo: string; baseScan: string; dexScreener: string; }
 interface Props { initialStats: Stats; initialTokens: Token[]; }
 
@@ -60,10 +59,6 @@ export default function DashboardClient({ initialStats, initialTokens }: Props) 
   const [page, setPage] = useState(1);
   const [loading, setLoading] = useState(false);
 
-  // Auth state
-  const [ghUser, setGhUser] = useState<GHUser | null>(null);
-  const [authLoading, setAuthLoading] = useState(true);
-
   // Deploy modal state
   const [deployOpen, setDeployOpen] = useState(false);
   const [deployStep, setDeployStep] = useState<DeployStep>("form");
@@ -72,44 +67,6 @@ export default function DashboardClient({ initialStats, initialTokens }: Props) 
   const [deployError, setDeployError] = useState("");
   const [deployLog, setDeployLog] = useState<string[]>([]);
   const termRef = useRef<HTMLDivElement>(null);
-
-  // ── Auth: cek JWT dari URL (?auth=...) atau localStorage ──────────────────
-  useEffect(() => {
-    async function checkAuth() {
-      setAuthLoading(true);
-      try {
-        // Cek URL param dulu (setelah OAuth callback)
-        const urlParams = new URLSearchParams(window.location.search);
-        const authToken = urlParams.get("auth");
-
-        if (authToken) {
-          // Simpan ke localStorage, bersihkan URL
-          localStorage.setItem("dl_jwt", authToken);
-          window.history.replaceState({}, "", window.location.pathname);
-          const user = await verifyJWT(authToken);
-          if (user) { setGhUser(user); setAuthLoading(false); return; }
-        }
-
-        // Cek localStorage
-        const saved = localStorage.getItem("dl_jwt");
-        if (saved) {
-          const user = await verifyJWT(saved);
-          if (user) { setGhUser(user); }
-          else { localStorage.removeItem("dl_jwt"); }
-        }
-      } catch (e) {
-        console.error(e);
-      } finally {
-        setAuthLoading(false);
-      }
-    }
-    checkAuth();
-  }, []);
-
-  const logout = () => {
-    localStorage.removeItem("dl_jwt");
-    setGhUser(null);
-  };
 
   // ── Token list ─────────────────────────────────────────────────────────────
   const fetchTokens = useCallback(async (p: number, s: string, q: string) => {
@@ -123,7 +80,6 @@ export default function DashboardClient({ initialStats, initialTokens }: Props) 
 
   // ── Deploy modal ───────────────────────────────────────────────────────────
   const openDeploy = () => {
-    if (!ghUser) { window.location.href = getGitHubLoginUrl(); return; }
     setDeployOpen(true);
     setDeployStep("form");
     setForm({ name:"", symbol:"", twitter:"", website:"", logoUrl:"" });
@@ -138,7 +94,6 @@ export default function DashboardClient({ initialStats, initialTokens }: Props) 
   };
 
   const runDeploy = async () => {
-    if (!ghUser) return;
     setDeployStep("deploying");
     setDeployLog([]);
 
@@ -146,7 +101,6 @@ export default function DashboardClient({ initialStats, initialTokens }: Props) 
 
     for (const line of [
       `$ dailaunch deploy`,
-      `✓ GitHub: @${ghUser.login}`,
       `? Token Name: ${form.name}`,
       `? Symbol: ${form.symbol.toUpperCase()}`,
       form.twitter ? `? Twitter: ${form.twitter}` : null,
@@ -170,7 +124,6 @@ export default function DashboardClient({ initialStats, initialTokens }: Props) 
         twitter: form.twitter || undefined,
         website: form.website || undefined,
         logoUrl: form.logoUrl || undefined,
-        githubToken: ghUser.githubToken,
       });
 
       setDeployResult(result);
@@ -217,7 +170,7 @@ export default function DashboardClient({ initialStats, initialTokens }: Props) 
             <span style={{ fontWeight:700, fontSize:16, color:S.text, letterSpacing:"-0.01em" }}>DaiLaunch</span>
           </a>
           <div style={{ display:"flex", gap:4 }}>
-            {["Dashboard","Tokens","My Tokens","Docs"].map((tab,i)=>(
+            {["Dashboard","Tokens","Docs"].map((tab,i)=>(
               <div key={tab} style={{ padding:"6px 14px", borderRadius:8, fontSize:13, fontWeight:500,
                 color:i===0?S.text:S.muted, cursor:"pointer",
                 background:i===0?S.purpleD:"transparent",
@@ -226,23 +179,6 @@ export default function DashboardClient({ initialStats, initialTokens }: Props) 
           </div>
           <div style={{ marginLeft:"auto", display:"flex", alignItems:"center", gap:12 }}>
             <div style={{ width:7, height:7, background:S.green, borderRadius:"50%", boxShadow:`0 0 8px ${S.green}`, animation:"blink 2s ease-in-out infinite" }} />
-
-            {/* Auth button */}
-            {authLoading ? (
-              <div style={{ fontSize:12, color:S.muted, fontFamily:S.mono }}>...</div>
-            ) : ghUser ? (
-              <div style={{ display:"flex", alignItems:"center", gap:8 }}>
-                <img src={ghUser.avatar} alt={ghUser.login} style={{ width:28, height:28, borderRadius:"50%", border:"2px solid var(--border-bright)" }} />
-                <span style={{ fontSize:13, color:S.text, fontFamily:S.mono }}>@{ghUser.login}</span>
-                <button onClick={logout} style={{ padding:"4px 10px", background:"rgba(255,255,255,0.05)", border:S.border, color:S.muted, borderRadius:6, fontSize:11, cursor:"pointer", fontFamily:S.sans }}>logout</button>
-              </div>
-            ) : (
-              <a href={getGitHubLoginUrl()} style={{ display:"flex", alignItems:"center", gap:7, padding:"8px 14px", background:"rgba(255,255,255,0.06)", border:S.borderB, borderRadius:10, color:S.text, fontFamily:S.sans, fontSize:13, fontWeight:600, cursor:"pointer", textDecoration:"none" }}>
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M12 0C5.37 0 0 5.37 0 12c0 5.31 3.435 9.795 8.205 11.385.6.105.825-.255.825-.57 0-.285-.015-1.23-.015-2.235-3.015.555-3.795-.735-4.035-1.41-.135-.345-.72-1.41-1.23-1.695-.42-.225-1.02-.78-.015-.795.945-.015 1.62.87 1.845 1.23 1.08 1.815 2.805 1.305 3.495.99.105-.78.42-1.305.765-1.605-2.67-.3-5.46-1.335-5.46-5.925 0-1.305.465-2.385 1.23-3.225-.12-.3-.54-1.53.12-3.18 0 0 1.005-.315 3.3 1.23.96-.27 1.98-.405 3-.405s2.04.135 3 .405c2.295-1.56 3.3-1.23 3.3-1.23.66 1.65.24 2.88.12 3.18.765.84 1.23 1.905 1.23 3.225 0 4.605-2.805 5.625-5.475 5.925.435.375.81 1.095.81 2.22 0 1.605-.015 2.895-.015 3.3 0 .315.225.69.825.57A12.02 12.02 0 0 0 24 12c0-6.63-5.37-12-12-12z"/></svg>
-                Login with GitHub
-              </a>
-            )}
-
             <button onClick={openDeploy} style={{ display:"flex", alignItems:"center", gap:7, padding:"8px 18px", background:S.purple, border:"none", borderRadius:10, color:"white", fontFamily:S.sans, fontSize:13, fontWeight:600, cursor:"pointer" }}>
               ⚡ Deploy Token
             </button>
@@ -384,7 +320,7 @@ export default function DashboardClient({ initialStats, initialTokens }: Props) 
                 </div>
               ))}
               <button onClick={openDeploy} style={{ width:"100%", marginTop:8, padding:"10px 0", background:S.purple, border:"none", borderRadius:10, color:"white", fontFamily:S.sans, fontWeight:700, fontSize:14, cursor:"pointer" }}>
-                {ghUser ? "⚡ Deploy Your Token" : "🔐 Login & Deploy"}
+                ⚡ Deploy Token
               </button>
             </div>
 
@@ -423,12 +359,6 @@ export default function DashboardClient({ initialStats, initialTokens }: Props) 
               <div style={{ display:"flex", alignItems:"center", gap:10 }}>
                 <div style={{ width:8, height:8, borderRadius:"50%", background:S.green, boxShadow:`0 0 8px ${S.green}` }} />
                 <span style={{ fontFamily:S.mono, fontSize:13, color:S.text }}>Deploy Token — DaiLaunch</span>
-                {ghUser && (
-                  <div style={{ display:"flex", alignItems:"center", gap:6, marginLeft:8, padding:"3px 10px", background:S.purpleD, border:S.borderB, borderRadius:20 }}>
-                    <img src={ghUser.avatar} alt="" style={{ width:16, height:16, borderRadius:"50%" }} />
-                    <span style={{ fontSize:11, fontFamily:S.mono, color:S.purpleL }}>@{ghUser.login}</span>
-                  </div>
-                )}
               </div>
               {deployStep !== "deploying" && (
                 <button onClick={()=>setDeployOpen(false)} style={{ background:"none", border:"none", color:S.muted, fontSize:16, cursor:"pointer" }}>✕</button>
@@ -453,9 +383,6 @@ export default function DashboardClient({ initialStats, initialTokens }: Props) 
               {/* FORM */}
               {deployStep === "form" && (
                 <div style={{ display:"flex", flexDirection:"column", gap:14 }}>
-                  <div style={{ fontSize:13, color:S.muted, lineHeight:1.6 }}>
-                    Deploy token ke <strong style={{ color:S.text }}>Base Mainnet</strong> sebagai <strong style={{ color:S.green }}>@{ghUser?.login}</strong>. Kamu akan mendapat 90% dari semua trading fees.
-                  </div>
                   <div><div style={lbl}>Token Name *</div><input style={input} placeholder="e.g. My Awesome Token" value={form.name} onChange={e=>setForm(f=>({...f,name:e.target.value}))} /></div>
                   <div><div style={lbl}>Symbol * (max 10 chars)</div><input style={input} placeholder="e.g. MAT" value={form.symbol} maxLength={10} onChange={e=>setForm(f=>({...f,symbol:e.target.value.toUpperCase()}))} /></div>
                   <div><div style={lbl}>Twitter/X URL (optional)</div><input style={input} placeholder="https://x.com/mytoken" value={form.twitter} onChange={e=>setForm(f=>({...f,twitter:e.target.value}))} /></div>
@@ -474,7 +401,6 @@ export default function DashboardClient({ initialStats, initialTokens }: Props) 
                   <div style={{ background:"rgba(0,229,160,.05)", border:"1px solid rgba(0,229,160,.2)", borderRadius:12, padding:18 }}>
                     <div style={{ color:S.green, fontWeight:700, fontSize:14, marginBottom:12 }}>📋 Deploy Summary</div>
                     {[
-                      ["Deployer", `@${ghUser?.login}`],
                       ["Token Name", form.name],
                       ["Symbol", form.symbol.toUpperCase()],
                       form.twitter?["Twitter", form.twitter]:null,
@@ -487,9 +413,6 @@ export default function DashboardClient({ initialStats, initialTokens }: Props) 
                         <span style={{ color:S.text, fontWeight:500, maxWidth:"60%", textAlign:"right", wordBreak:"break-all" }}>{row[1]}</span>
                       </div>
                     ))}
-                  </div>
-                  <div style={{ background:"rgba(106,32,240,.08)", border:S.borderB, borderRadius:10, padding:12, fontSize:12, color:S.muted, lineHeight:1.6 }}>
-                    ⚠️ Deployment di <strong>Base Mainnet</strong> membutuhkan ETH untuk gas. Platform wallet akan digunakan untuk membayar gas fee.
                   </div>
                   <div style={{ display:"flex", gap:10 }}>
                     <button onClick={()=>setDeployStep("form")} style={{ flex:1, padding:"10px 0", background:"transparent", border:S.border, borderRadius:10, color:S.muted, fontFamily:S.sans, fontWeight:600, fontSize:13, cursor:"pointer" }}>
