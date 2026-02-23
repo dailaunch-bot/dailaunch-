@@ -76,9 +76,27 @@ export async function deployTokenViaClanker(params: DeployParams): Promise<Deplo
     },
   };
 
-  const { txHash, waitForTransaction, error } = await clanker.deploy(deployParams);
+  console.log('[DaiLaunch] Deploy params:', JSON.stringify(deployParams, null, 2));
 
-  if (error) throw new Error(`Clanker deploy failed: ${error.message}`);
+  let txHash: string;
+  let waitForTransaction: any;
+  let error: any;
+
+  try {
+    const result = await clanker.deploy(deployParams);
+    txHash             = result.txHash;
+    waitForTransaction = result.waitForTransaction;
+    error              = result.error;
+  } catch (deployErr: any) {
+    console.error('[DaiLaunch] clanker.deploy() threw exception:', deployErr);
+    console.error('[DaiLaunch] Full error:', JSON.stringify(deployErr, Object.getOwnPropertyNames(deployErr)));
+    throw new Error(`Clanker deploy exception: ${deployErr?.message || JSON.stringify(deployErr)}`);
+  }
+
+  if (error) {
+    console.error('[DaiLaunch] Clanker error object:', JSON.stringify(error, Object.getOwnPropertyNames(error)));
+    throw new Error(`Clanker deploy failed: ${error?.message || JSON.stringify(error)}`);
+  }
 
   const { address } = await waitForTransaction();
 
