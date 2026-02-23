@@ -14,4 +14,4 @@ ENV NODE_ENV=production
 COPY --from=builder /app/packages/dashboard/.next/standalone ./
 COPY --from=builder /app/packages/dashboard/.next/static ./.next/static
 EXPOSE 3000
-CMD ["node", "packages/dashboard/server.js"]
+CMD ["node", "server.js"]
