@@ -1,15 +1,42 @@
-@tailwind base;
-@tailwind components;
-@tailwind utilities;
+@import url('https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=DM+Sans:wght@300;400;500;600;700&display=swap');
 
 * { box-sizing: border-box; margin: 0; padding: 0; }
 
+:root {
+  --bg: #08080f;
+  --surface: #0e0e1a;
+  --surface2: #13131f;
+  --border: rgba(120,60,255,0.12);
+  --border-bright: rgba(120,60,255,0.3);
+  --purple: #6a20f0;
+  --purple-light: #8b4fff;
+  --purple-dim: rgba(106,32,240,0.15);
+  --green: #00e5a0;
+  --red: #ff4466;
+  --text: #f0eeff;
+  --text-muted: rgba(220,210,255,0.4);
+  --text-dim: rgba(220,210,255,0.2);
+  --mono: 'Space Mono', monospace;
+  --sans: 'DM Sans', sans-serif;
+}
+
 body {
-  background: #04060f;
-  color: #e2e8f0;
-  font-family: 'DM Sans', sans-serif;
+  background: var(--bg);
+  color: var(--text);
+  font-family: var(--sans);
+  overflow-x: hidden;
 }
 
 ::-webkit-scrollbar { width: 4px; }
 ::-webkit-scrollbar-track { background: transparent; }
-::-webkit-scrollbar-thumb { background: rgba(34,211,165,0.2); border-radius: 2px; }
+::-webkit-scrollbar-thumb { background: rgba(106,32,240,0.3); border-radius: 2px; }
+
+@keyframes blink { 0%,100%{opacity:1} 50%{opacity:0.3} }
+@keyframes fadeSlideIn { from{opacity:0;transform:translateY(8px)} to{opacity:1;transform:translateY(0)} }
+@keyframes flash-green { 0%,100%{background:transparent} 30%{background:rgba(0,229,160,0.12)} }
+@keyframes flash-red { 0%,100%{background:transparent} 30%{background:rgba(255,68,102,0.12)} }
+@keyframes ticker-scroll { from{transform:translateX(0)} to{transform:translateX(-50%)} }
+
+.flash-green { animation: flash-green 0.8s ease; }
+.flash-red { animation: flash-red 0.8s ease; }
+.fade-in { animation: fadeSlideIn 0.4s ease both; }
