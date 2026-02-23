@@ -11,19 +11,18 @@ export interface AuthUser {
 }
 
 const STORAGE_KEY = "dailaunch_session";
-const API = "https://api.dailaunch.online";
+const API = "https://api.dailaunch.online"; // hardcoded, jangan pakai env var
 
 export function useAuth() {
   const [user, setUser]       = useState<AuthUser | null>(null);
   const [loading, setLoading] = useState(true);
 
-  // ── Restore session from localStorage ────────────────────────────────────
+  // ── Restore session dari localStorage ────────────────────────────────────
   const restoreSession = useCallback(async () => {
     try {
       const stored = localStorage.getItem(STORAGE_KEY);
       if (stored) {
         const parsed: AuthUser = JSON.parse(stored);
-        // Check not expired
         if (new Date(parsed.expiresAt) > new Date()) {
           setUser(parsed);
           setLoading(false);
@@ -38,28 +37,18 @@ export function useAuth() {
     setLoading(false);
   }, []);
 
-  // ── Handle ?session=xxx in URL (from dailaunch login) ────────────────────
+  // ── Handle ?session=xxx dari CLI (dailaunch login) ────────────────────────
   const handleUrlSession = useCallback(async () => {
     if (typeof window === "undefined") return;
-
     const params = new URLSearchParams(window.location.search);
     const sessionToken = params.get("session");
     if (!sessionToken) return;
 
-    // Remove token from URL immediately (security)
-    const cleanUrl = window.location.pathname;
-    window.history.replaceState({}, "", cleanUrl);
-
+    window.history.replaceState({}, "", window.location.pathname);
     setLoading(true);
     try {
       const res = await fetch(`${API}/auth/session?token=${sessionToken}`);
-      if (!res.ok) {
-        const err = await res.json();
-        console.error("[Auth] Session invalid:", err.error);
-        setLoading(false);
-        return;
-      }
-
+      if (!res.ok) return;
       const data = await res.json();
       const authUser: AuthUser = {
         githubLogin:  data.githubLogin,
@@ -68,11 +57,52 @@ export function useAuth() {
         githubToken:  data.githubToken,
         expiresAt:    data.expiresAt,
       };
-
       localStorage.setItem(STORAGE_KEY, JSON.stringify(authUser));
       setUser(authUser);
     } catch (err) {
-      console.error("[Auth] Session fetch error:", err);
+      console.error("[Auth] Session error:", err);
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  // ── Handle ?auth=JWT dari GitHub OAuth web callback ───────────────────────
+  // Backend /auth/github/callback redirect ke: DASHBOARD_URL?auth=JWT_TOKEN
+  // JWT berisi: { githubToken, login, avatar, name }
+  const handleUrlAuth = useCallback(async () => {
+    if (typeof window === "undefined") return;
+    const params = new URLSearchParams(window.location.search);
+    const jwtToken = params.get("auth");
+    if (!jwtToken) return;
+
+    // Bersihkan token dari URL
+    window.history.replaceState({}, "", window.location.pathname);
+    setLoading(true);
+    try {
+      // Verifikasi JWT ke backend untuk dapat user info
+      const res = await fetch(`${API}/auth/me?token=${jwtToken}`);
+      if (!res.ok) {
+        console.error("[Auth] JWT invalid");
+        setLoading(false);
+        return;
+      }
+      const data = await res.json();
+
+      // JWT expire 7 hari dari sekarang
+      const expiresAt = new Date();
+      expiresAt.setDate(expiresAt.getDate() + 7);
+
+      const authUser: AuthUser = {
+        githubLogin:  data.login,
+        githubName:   data.name  || data.login,
+        githubAvatar: data.avatar || "",
+        githubToken:  data.githubToken,
+        expiresAt:    expiresAt.toISOString(),
+      };
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(authUser));
+      setUser(authUser);
+    } catch (err) {
+      console.error("[Auth] JWT auth error:", err);
     } finally {
       setLoading(false);
     }
@@ -80,11 +110,18 @@ export function useAuth() {
 
   useEffect(() => {
     const init = async () => {
-      await handleUrlSession();
-      await restoreSession();
+      // Cek ?session= dulu (dari CLI), lalu ?auth= (dari OAuth web), lalu localStorage
+      const params = new URLSearchParams(window.location.search);
+      if (params.get("session")) {
+        await handleUrlSession();
+      } else if (params.get("auth")) {
+        await handleUrlAuth();
+      } else {
+        await restoreSession();
+      }
     };
     init();
-  }, [handleUrlSession, restoreSession]);
+  }, [handleUrlSession, handleUrlAuth, restoreSession]);
 
   // ── Logout ────────────────────────────────────────────────────────────────
   const logout = useCallback(() => {
