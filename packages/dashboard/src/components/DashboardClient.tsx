@@ -2,7 +2,7 @@
 
 import { useState, useCallback, useRef, useEffect } from "react";
 import { useRouter } from "next/navigation";
-import { getTokens, deployToken } from "@/lib/api";
+import { getTokens } from "@/lib/api";
 import { useAuth } from "@/hooks/useAuth";
 
 // ── Types ──────────────────────────────────────────────────────────────────────
@@ -63,7 +63,7 @@ export default function DashboardClient({ initialStats, initialTokens }: Props) 
   // ── Auth ───────────────────────────────────────────────────────────────────
   const { user, loading: authLoading, logout } = useAuth();
 
-  // Deploy modal state
+  // Deploy modal state (kept for type compatibility)
   const [deployOpen, setDeployOpen] = useState(false);
   const [deployStep, setDeployStep] = useState<DeployStep>("form");
   const [form, setForm] = useState({ name:"", symbol:"", twitter:"", website:"", logoUrl:"" });
@@ -71,6 +71,14 @@ export default function DashboardClient({ initialStats, initialTokens }: Props) 
   const [deployError, setDeployError] = useState("");
   const [deployLog, setDeployLog] = useState<string[]>([]);
   const termRef = useRef<HTMLDivElement>(null);
+
+  // CLI modal state
+  const [cliModalOpen, setCliModalOpen] = useState(false);
+  const [cliStep, setCliStep] = useState(2); // 1=Install CLI, 2=GitHub Auth, 3=Deploy, 4=Live!
+  const [cliRunning, setCliRunning] = useState(false);
+  const [cliDone, setCliDone] = useState(false);
+  const [cliLines, setCliLines] = useState<Array<{html: string}>>([]);
+  const cliTermRef = useRef<HTMLDivElement>(null);
 
   // ── Token list ─────────────────────────────────────────────────────────────
   const fetchTokens = useCallback(async (p: number, s: string, q: string) => {
@@ -84,79 +92,82 @@ export default function DashboardClient({ initialStats, initialTokens }: Props) 
 
   // ── Deploy modal ───────────────────────────────────────────────────────────
   const openDeploy = () => {
-    setDeployOpen(true);
-    setDeployStep("form");
-    setForm({ name:"", symbol:"", twitter:"", website:"", logoUrl:"" });
-    setDeployResult(null);
-    setDeployError("");
-    setDeployLog([]);
+    setCliModalOpen(true);
+    setCliStep(2);
+    setCliRunning(false);
+    setCliDone(false);
+    setCliLines([]);
   };
 
-  const addLog = (msg: string) => {
-    setDeployLog(p => [...p, msg]);
-    setTimeout(() => { if (termRef.current) termRef.current.scrollTop = 99999; }, 50);
+  const cliSleep = (ms: number) => new Promise(r => setTimeout(r, ms));
+
+  const addCliLine = (html: string) => {
+    setCliLines(prev => [...prev, { html }]);
+    setTimeout(() => { if (cliTermRef.current) cliTermRef.current.scrollTop = 99999; }, 30);
   };
 
-  const runDeploy = async () => {
-    setDeployStep("deploying");
-    setDeployLog([]);
+  const runCliDeploy = async () => {
+    if (cliRunning) return;
+    setCliRunning(true);
 
-    const sleep = (ms: number) => new Promise(r => setTimeout(r, ms));
+    const clr = { purple:"#a87fff", green:"#00e5a0", yellow:"#f59e0b", muted:"#64748b" };
 
-    for (const line of [
-      `$ dailaunch deploy`,
-      `? Token Name: ${form.name}`,
-      `? Symbol: ${form.symbol.toUpperCase()}`,
-      form.twitter ? `? Twitter: ${form.twitter}` : null,
-      form.website ? `? Website: ${form.website}` : null,
-      ``,
-      `⏳ Connecting to Base Mainnet...`,
-    ].filter(Boolean) as string[]) {
-      await sleep(180);
-      addLog(line);
-    }
+    const appendLines = async (lines: string[], delay = 120) => {
+      for (const l of lines) {
+        await cliSleep(delay);
+        addCliLine(l);
+        setTimeout(() => { if (cliTermRef.current) cliTermRef.current.scrollTop = 99999; }, 40);
+      }
+    };
 
-    await sleep(500);
-    addLog(`⏳ Generating creator wallet (AES-256)...`);
-    await sleep(600);
-    addLog(`⏳ Deploying via Clanker SDK v4... (1-2 min)`);
+    setCliStep(3);
 
-    try {
-      // If user is logged in via CLI, use their personal GitHub token → /api/deploy
-      // Otherwise, use platform token → /api/deploy/web
-      const result = await deployToken({
-        name: form.name,
-        symbol: form.symbol.toUpperCase(),
-        twitter: form.twitter || undefined,
-        website: form.website || undefined,
-        logoUrl: form.logoUrl || undefined,
-        githubToken: user?.githubToken,
-      });
+    await appendLines([
+      `<div style="color:${clr.muted}">? Token Name: <span style="color:${clr.green}">My Awesome Token</span></div>`,
+    ], 400);
+    await appendLines([
+      `<div style="color:${clr.muted}">? Symbol (max 10 chars): <span style="color:${clr.green}">MAT</span></div>`,
+    ], 600);
+    await appendLines([
+      `<div style="color:${clr.muted}">? Twitter/X URL (optional): <span style="color:${clr.green}">https://x.com/mytoken</span></div>`,
+      `<div style="color:${clr.muted}">? Website URL (optional): <span style="color:${clr.green}">https://mytoken.xyz</span></div>`,
+    ], 350);
 
-      setDeployResult(result);
-      await sleep(100);
-      addLog(``);
-      addLog(`✅ Deployment Complete!`);
-      addLog(`  Contract : ${result.contractAddress}`);
-      addLog(`  Wallet   : ${result.creatorWallet}`);
-      addLog(`  Repo     : ${result.githubRepo}`);
-      addLog(`  TX       : ${result.txHash}`);
-      addLog(``);
-      addLog(`💰 90% of all trading fees → your wallet. Forever.`);
-      addLog(`$ _`);
-      setDeployStep("done");
-      setTimeout(() => fetchTokens(1, sort, search), 2500);
-    } catch (err: any) {
-      addLog(``);
-      addLog(`❌ Error: ${err.message}`);
-      setDeployError(err.message || "Deploy failed");
-      setDeployStep("error");
-    }
+    await cliSleep(400);
+    await appendLines([
+      `<div>&nbsp;</div>`,
+      `<div style="color:${clr.yellow}">⏳ Connecting to Base Mainnet...</div>`,
+    ], 100);
+    await cliSleep(900);
+    await appendLines([
+      `<div style="color:${clr.yellow}">⏳ Generating creator wallet (AES-256)...</div>`,
+    ], 100);
+    await cliSleep(800);
+    await appendLines([
+      `<div style="color:${clr.yellow}">⏳ Deploying via Clanker SDK v4... (1-2 min)</div>`,
+    ], 100);
+    await cliSleep(1200);
+
+    setCliStep(4);
+
+    await appendLines([
+      `<div>&nbsp;</div>`,
+      `<div style="color:${clr.green};font-weight:700">✅ Deployment Complete!</div>`,
+      `<div>&nbsp;</div>`,
+      `<div style="color:${clr.muted}">  Contract : <span style="color:${clr.purple}">0xabc...def123</span></div>`,
+      `<div style="color:${clr.muted}">  Wallet   : <span style="color:${clr.purple}">0x123...456abc</span></div>`,
+      `<div style="color:${clr.muted}">  GitHub   : <span style="color:${clr.purple}">github.com/youruser/dailaunch-mat</span></div>`,
+      `<div style="color:${clr.muted}">  TX       : <span style="color:${clr.purple}">0xfed...cba987</span></div>`,
+      `<div>&nbsp;</div>`,
+      `<div style="color:${clr.green}">  💰 90% of all trading fees → your wallet. Forever.</div>`,
+      `<div>&nbsp;</div>`,
+      `<div style="color:${clr.purple}">$ <span style="display:inline-block;width:8px;height:13px;background:${clr.purple};vertical-align:middle;animation:blink 1s infinite"></span></div>`,
+    ], 80);
+
+    setCliDone(true);
   };
 
   // ── Render ─────────────────────────────────────────────────────────────────
-  const stepLabels = ["Token Info", "Confirm", "Deploying", "Done!"];
-  const curStepIdx = { form:0, confirm:1, deploying:2, done:3, error:2 }[deployStep];
   const tickerItems = [...tokens, ...tokens];
 
   return (
@@ -374,139 +385,96 @@ export default function DashboardClient({ initialStats, initialTokens }: Props) 
         </div>
       </div>
 
-      {/* ── DEPLOY MODAL ───────────────────────────────────────────────────────── */}
-      {deployOpen && (
-        <div onClick={e=>{ if(e.target===e.currentTarget && deployStep!=="deploying") setDeployOpen(false); }}
+      {/* ── CLI DEPLOY MODAL ──────────────────────────────────────────────────── */}
+      {cliModalOpen && (
+        <div onClick={e=>{ if(e.target===e.currentTarget && !cliRunning) setCliModalOpen(false); }}
           style={{ position:"fixed", inset:0, background:"rgba(0,0,0,.75)", backdropFilter:"blur(8px)", zIndex:200, display:"flex", alignItems:"center", justifyContent:"center", padding:20 }}>
-          <div style={{ background:S.surface, border:S.borderB, borderRadius:20, width:"100%", maxWidth:560, maxHeight:"90vh", display:"flex", flexDirection:"column", boxShadow:"0 32px 80px rgba(0,0,0,.6)", overflow:"hidden" }}>
+          <div style={{ background:"#0d0d1a", border:"1px solid rgba(106,32,240,.4)", borderRadius:16, width:"100%", maxWidth:580, display:"flex", flexDirection:"column", boxShadow:"0 32px 80px rgba(0,0,0,.7)", overflow:"hidden" }}>
 
             {/* Header */}
-            <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", padding:"16px 20px", borderBottom:S.border }}>
+            <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", padding:"14px 18px", borderBottom:"1px solid rgba(255,255,255,.06)" }}>
               <div style={{ display:"flex", alignItems:"center", gap:10 }}>
                 <div style={{ width:8, height:8, borderRadius:"50%", background:S.green, boxShadow:`0 0 8px ${S.green}` }} />
-                <span style={{ fontFamily:S.mono, fontSize:13, color:S.text }}>Deploy Token — DaiLaunch</span>
+                <span style={{ fontFamily:S.mono, fontSize:13, color:S.text, fontWeight:600 }}>Deploy Token — DaiLaunch CLI</span>
               </div>
-              {deployStep !== "deploying" && (
-                <button onClick={()=>setDeployOpen(false)} style={{ background:"none", border:"none", color:S.muted, fontSize:16, cursor:"pointer" }}>✕</button>
+              {!cliRunning && (
+                <button onClick={()=>setCliModalOpen(false)} style={{ background:"none", border:"none", color:S.muted, fontSize:18, cursor:"pointer", lineHeight:1 }}>✕</button>
               )}
             </div>
 
-            {/* Steps */}
-            <div style={{ display:"flex", borderBottom:S.border }}>
-              {stepLabels.map((label,i)=>{
-                const done = i < curStepIdx; const active = i === curStepIdx;
+            {/* Step tabs */}
+            <div style={{ display:"flex", borderBottom:"1px solid rgba(255,255,255,.06)" }}>
+              {[
+                { n:1, icon:"✅", label:"Install CLI" },
+                { n:2, icon:"🔐", label:"GitHub Auth" },
+                { n:3, icon:"⚡", label:"Deploy" },
+                { n:4, icon:"🎉", label:"Live!" },
+              ].map((s, i) => {
+                const done = s.n < cliStep;
+                const active = s.n === cliStep;
                 return (
-                  <div key={label} style={{ flex:1, padding:"9px 8px", fontSize:12, textAlign:"center", color:done?S.green:active?S.text:S.dim, background:active?S.purpleD:"transparent", borderRight:i<3?S.border:"none", fontFamily:S.sans, fontWeight:active?600:400 }}>
-                    {done?"✅ ":active?"▶ ":"○ "}{label}
+                  <div key={s.n} style={{ flex:1, padding:"10px 8px", textAlign:"center", fontSize:12, fontFamily:S.sans, fontWeight:active?700:400,
+                    color:done?S.green:active?S.text:S.dim,
+                    background:active?"rgba(106,32,240,.15)":"transparent",
+                    borderRight:i<3?"1px solid rgba(255,255,255,.06)":"none",
+                    display:"flex", flexDirection:"column", alignItems:"center", gap:4 }}>
+                    <span style={{ fontSize:16 }}>{done?"✅":s.icon}</span>
+                    <span>{s.label}</span>
                   </div>
                 );
               })}
             </div>
 
-            {/* Content */}
-            <div style={{ flex:1, overflowY:"auto", padding:24 }}>
+            {/* Terminal */}
+            <div ref={cliTermRef} style={{ background:"#06060f", padding:"16px 18px", fontFamily:S.mono, fontSize:12, lineHeight:1.9, maxHeight:360, overflowY:"auto", minHeight:200 }}>
 
-              {/* FORM */}
-              {deployStep === "form" && (
-                <div style={{ display:"flex", flexDirection:"column", gap:14 }}>
-                  <div><div style={lbl}>Token Name *</div><input style={input} placeholder="e.g. My Awesome Token" value={form.name} onChange={e=>setForm(f=>({...f,name:e.target.value}))} /></div>
-                  <div><div style={lbl}>Symbol * (max 10 chars)</div><input style={input} placeholder="e.g. MAT" value={form.symbol} maxLength={10} onChange={e=>setForm(f=>({...f,symbol:e.target.value.toUpperCase()}))} /></div>
-                  <div><div style={lbl}>Twitter/X URL (optional)</div><input style={input} placeholder="https://x.com/mytoken" value={form.twitter} onChange={e=>setForm(f=>({...f,twitter:e.target.value}))} /></div>
-                  <div><div style={lbl}>Website URL (optional)</div><input style={input} placeholder="https://mytoken.xyz" value={form.website} onChange={e=>setForm(f=>({...f,website:e.target.value}))} /></div>
-                  <div><div style={lbl}>Logo Image URL (optional)</div><input style={input} placeholder="https://..." value={form.logoUrl} onChange={e=>setForm(f=>({...f,logoUrl:e.target.value}))} /></div>
-                  <button onClick={()=>setDeployStep("confirm")} disabled={!form.name.trim()||!form.symbol.trim()}
-                    style={{ padding:"11px 0", background:(!form.name.trim()||!form.symbol.trim())?"rgba(106,32,240,.3)":S.purple, border:"none", borderRadius:10, color:"white", fontFamily:S.sans, fontWeight:700, fontSize:14, cursor:(!form.name.trim()||!form.symbol.trim())?"not-allowed":"pointer", marginTop:4 }}>
-                    Next → Confirm
-                  </button>
-                </div>
-              )}
+              {/* Static steps 1 & 2 - always shown */}
+              <div style={{ color:"#3d3d5c" }}># ── Step 1: Install DaiLaunch CLI ─────────────────</div>
+              <div><span style={{ color:S.purpleL }}>$ </span><span style={{ color:"#a87fff" }}>git clone https://github.com/dailaunch-bot/dailaunch-</span></div>
+              <div><span style={{ color:S.purpleL }}>$ </span><span style={{ color:"#a87fff" }}>cd dailaunch- &amp;&amp; npm install &amp;&amp; npm run build:all</span></div>
+              <div><span style={{ color:S.purpleL }}>$ </span><span style={{ color:"#a87fff" }}>npm install -g ./packages/cli</span></div>
+              <div style={{ color:S.green }}>✓ dailaunch v1.0.0 installed</div>
+              <div>&nbsp;</div>
+              <div style={{ color:"#3d3d5c" }}># ── Step 2: Authenticate with GitHub ───────────────</div>
+              <div><span style={{ color:S.purpleL }}>$ </span><span style={{ color:"#a87fff" }}>gh auth login</span></div>
+              <div style={{ color:S.muted }}>? What account do you want to log into? <span style={{ color:S.green }}>GitHub.com</span></div>
+              <div style={{ color:S.muted }}>? How would you like to authenticate? <span style={{ color:S.green }}>Login with a web browser</span></div>
+              <div style={{ color:S.green }}>✓ Logged in as @youruser</div>
+              <div>&nbsp;</div>
+              <div style={{ color:"#3d3d5c" }}># ── Step 3: Deploy your token ──────────────────────</div>
+              <div><span style={{ color:S.purpleL }}>$ </span><span style={{ color:"#a87fff" }}>dailaunch deploy</span></div>
 
-              {/* CONFIRM */}
-              {deployStep === "confirm" && (
-                <div style={{ display:"flex", flexDirection:"column", gap:14 }}>
-                  <div style={{ background:"rgba(0,229,160,.05)", border:"1px solid rgba(0,229,160,.2)", borderRadius:12, padding:18 }}>
-                    <div style={{ color:S.green, fontWeight:700, fontSize:14, marginBottom:12 }}>📋 Deploy Summary</div>
-                    {[
-                      ["Token Name", form.name],
-                      ["Symbol", form.symbol.toUpperCase()],
-                      form.twitter?["Twitter", form.twitter]:null,
-                      form.website?["Website", form.website]:null,
-                      ["Chain", "Base Mainnet (8453)"],
-                      ["Creator Fee", "90% of all trading fees → your wallet"],
-                    ].filter(Boolean).map((row: any)=>(
-                      <div key={row[0]} style={{ display:"flex", justifyContent:"space-between", padding:"6px 0", borderBottom:"1px solid rgba(0,229,160,.1)", fontSize:13 }}>
-                        <span style={{ color:S.muted, fontFamily:S.mono }}>{row[0]}</span>
-                        <span style={{ color:S.text, fontWeight:500, maxWidth:"60%", textAlign:"right", wordBreak:"break-all" }}>{row[1]}</span>
-                      </div>
-                    ))}
-                  </div>
-                  <div style={{ display:"flex", gap:10 }}>
-                    <button onClick={()=>setDeployStep("form")} style={{ flex:1, padding:"10px 0", background:"transparent", border:S.border, borderRadius:10, color:S.muted, fontFamily:S.sans, fontWeight:600, fontSize:13, cursor:"pointer" }}>
-                      ← Edit
-                    </button>
-                    <button onClick={runDeploy} style={{ flex:2, padding:"10px 0", background:S.purple, border:"none", borderRadius:10, color:"white", fontFamily:S.sans, fontWeight:700, fontSize:14, cursor:"pointer" }}>
-                      ⚡ Deploy to Base Mainnet
-                    </button>
-                  </div>
-                </div>
-              )}
+              {/* Dynamic lines added during animation */}
+              {cliLines.map((l, i) => (
+                <div key={i} dangerouslySetInnerHTML={{ __html: l.html }} />
+              ))}
 
-              {/* DEPLOYING / DONE / ERROR → Terminal */}
-              {(deployStep==="deploying"||deployStep==="done"||deployStep==="error") && (
+              {/* Blinking cursor when idle */}
+              {!cliRunning && !cliDone && (
                 <div>
-                  <div ref={termRef} style={{ background:"#060610", border:S.border, borderRadius:12, padding:16, fontFamily:S.mono, fontSize:12, lineHeight:1.9, maxHeight:320, overflowY:"auto" }}>
-                    {deployLog.map((line,i)=>{
-                      const isOk = line.startsWith("✅")||line.startsWith("💰")||line.startsWith("✓");
-                      const isErr = line.startsWith("❌");
-                      const isWarn = line.startsWith("⏳");
-                      const isCmd = line.startsWith("$");
-                      return (
-                        <div key={i} style={{ color:isOk?S.green:isErr?S.red:isWarn?"#f59e0b":isCmd?S.purpleL:S.muted }}>
-                          {line || "\u00A0"}
-                        </div>
-                      );
-                    })}
-                    {deployStep==="deploying" && <div style={{ display:"inline-block", width:8, height:14, background:S.green, verticalAlign:"middle", animation:"blink .8s infinite" }} />}
-                  </div>
-
-                  {deployStep==="done" && deployResult && (
-                    <div style={{ marginTop:14, display:"flex", flexDirection:"column", gap:10 }}>
-                      <div style={{ background:"rgba(0,229,160,.06)", border:"1px solid rgba(0,229,160,.2)", borderRadius:10, padding:12, fontFamily:S.mono, fontSize:12 }}>
-                        <div style={{ color:S.green, fontWeight:700, marginBottom:8 }}>🎉 Token Live on Base!</div>
-                        <div style={{ color:S.muted }}>Contract : <span style={{ color:"#a87fff" }}>{shortAddr(deployResult.contractAddress)}</span></div>
-                        <div style={{ color:S.muted }}>Wallet   : <span style={{ color:"#a87fff" }}>{shortAddr(deployResult.creatorWallet)}</span></div>
-                      </div>
-                      <div style={{ display:"flex", gap:8 }}>
-                        {[
-                          { label:"BaseScan ↗", href:deployResult.baseScan },
-                          { label:"DexScreener ↗", href:deployResult.dexScreener },
-                          deployResult.githubRepo?{ label:"GitHub ↗", href:deployResult.githubRepo }:null,
-                        ].filter(Boolean).map((l:any)=>(
-                          <a key={l.label} href={l.href} target="_blank" rel="noopener noreferrer"
-                            style={{ flex:1, padding:"9px 0", background:S.purpleD, border:S.borderB, borderRadius:8, color:S.text, textAlign:"center", textDecoration:"none", fontSize:12, fontFamily:S.sans }}>
-                            {l.label}
-                          </a>
-                        ))}
-                      </div>
-                      <button onClick={()=>{ setDeployOpen(false); fetchTokens(1,sort,search); }}
-                        style={{ padding:"11px 0", background:S.purple, border:"none", borderRadius:10, color:"white", fontFamily:S.sans, fontWeight:700, fontSize:14, cursor:"pointer" }}>
-                        ✅ Done — View Dashboard
-                      </button>
-                    </div>
-                  )}
-
-                  {deployStep==="error" && (
-                    <div style={{ marginTop:14, display:"flex", gap:10 }}>
-                      <button onClick={()=>setDeployStep("confirm")} style={{ flex:1, padding:"10px 0", background:"transparent", border:S.border, borderRadius:10, color:S.muted, fontFamily:S.sans, fontWeight:600, fontSize:13, cursor:"pointer" }}>← Retry</button>
-                      <div style={{ flex:2, padding:"10px 14px", background:"rgba(255,68,102,.08)", border:"1px solid rgba(255,68,102,.2)", borderRadius:10, color:S.red, fontSize:12, fontFamily:S.mono }}>{deployError}</div>
-                    </div>
-                  )}
+                  <span style={{ display:"inline-block", width:8, height:13, background:S.purpleL, verticalAlign:"middle", animation:"blink 1s infinite" }} />
                 </div>
               )}
             </div>
 
-            <div style={{ padding:"12px 20px", borderTop:S.border, fontSize:12, color:S.dim, fontFamily:S.sans }}>
-              Powered by <span style={{ color:S.purpleL }}>Clanker SDK v4</span> · Base Mainnet · 90% fees → creator
+            {/* Footer */}
+            <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", padding:"12px 18px", borderTop:"1px solid rgba(255,255,255,.06)" }}>
+              <div style={{ fontSize:11, color:S.dim, fontFamily:S.sans }}>
+                Powered by <span style={{ color:S.purpleL }}>Clanker SDK v4</span> · Base Mainnet
+              </div>
+              <div style={{ display:"flex", gap:8 }}>
+                {cliDone ? (
+                  <button onClick={()=>setCliModalOpen(false)}
+                    style={{ padding:"9px 20px", background:"rgba(0,229,160,.15)", border:"1px solid rgba(0,229,160,.35)", borderRadius:10, color:S.green, fontFamily:S.sans, fontSize:13, fontWeight:700, cursor:"pointer" }}>
+                    🎉 Token Deployed!
+                  </button>
+                ) : (
+                  <button onClick={runCliDeploy} disabled={cliRunning}
+                    style={{ display:"flex", alignItems:"center", gap:7, padding:"9px 20px", background:cliRunning?"rgba(106,32,240,.3)":S.purple, border:"none", borderRadius:10, color:"white", fontFamily:S.sans, fontSize:13, fontWeight:700, cursor:cliRunning?"not-allowed":"pointer", opacity:cliRunning?.7:1 }}>
+                    {cliRunning ? "⏳ Running..." : "⚡ Run dailaunch deploy"}
+                  </button>
+                )}
+              </div>
             </div>
           </div>
         </div>
