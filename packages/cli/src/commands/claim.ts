@@ -46,7 +46,7 @@ export const claimCmd = new Command('claim')
     }
 
     console.log('');
-    console.log(chalk.gray('  Fee (80% of all trades) flows directly to your wallet.'));
+    console.log(chalk.gray('  Fee (90% of all trades) flows directly to your wallet. (10% goes to DaiLaunch platform)'));
     console.log(chalk.gray('  Import wallet address to MetaMask to withdraw anytime.\n'));
 
   } catch (err: any) {

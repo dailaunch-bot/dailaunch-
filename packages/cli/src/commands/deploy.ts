@@ -136,7 +136,7 @@ console.log(`  Token README  : ${chalk.cyan(data.githubRepo + '/blob/main/README
     console.log(`  BaseScan      : ${chalk.blue(data.baseScan)}`);
     console.log(`  DexScreener   : ${chalk.blue(data.dexScreener)}`);
     console.log('');
-    console.log(chalk.yellow('  💰 80% of all trading fees go to your creator wallet'));
+    console.log(chalk.yellow('  💰 90% of all trading fees go to your creator wallet (10% to DaiLaunch platform)'));
     console.log(chalk.yellow('  📊 Run: dailaunch claim  — to check your fee balance\n'));
 
   } catch (err: any) {
