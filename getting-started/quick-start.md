@@ -13,7 +13,7 @@ Select: **GitHub.com** → **HTTPS** → **Login with a web browser**
 ## 2. Clone & Install
 
 ```bash
-git clone https://github.com/dailaunch-bot/dailaunch
+git clone https://github.com/dailaunch-bot/dailaunch-
 cd dailaunch
 ```
 

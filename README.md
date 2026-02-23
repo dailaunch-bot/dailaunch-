@@ -8,7 +8,7 @@ Deploy an ERC-20 token to Base blockchain in under 2 minutes — all you need is
 
 [![Base Chain](https://img.shields.io/badge/Chain-Base-0052FF)](https://base.org)
 [![Powered by Clanker](https://img.shields.io/badge/Powered%20by-Clanker%20SDK%20v4-purple)](https://github.com/clanker-devco)
-[![Version](https://img.shields.io/badge/version-1.0.0-blue)](https://github.com/dailaunch-bot/dailaunch)
+[![Version](https://img.shields.io/badge/version-1.0.0-blue)](https://github.com/dailaunch-bot/dailaunch-)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 
 [Website](https://dailaunch.online) · [Dashboard](https://dailaunch.online/dashboard) · [BaseScan](https://basescan.org)
@@ -216,7 +216,7 @@ Select: **GitHub.com** → **HTTPS** → **Login with a web browser**
 ### Step 2 — Clone the Repository
 
 ```bash
-git clone https://github.com/dailaunch-bot/dailaunch
+git clone https://github.com/dailaunch-bot/dailaunch-
 cd dailaunch
 ```
 
@@ -350,7 +350,7 @@ Pull requests are welcome! For major changes, please open an issue first to disc
 
 <div align="center">
 
-**⚡ DaiLaunch** · [dailaunch.online](https://dailaunch.online) · [github.com/dailaunch-bot/dailaunch](https://github.com/dailaunch-bot/dailaunch)
+**⚡ DaiLaunch** · [dailaunch.online](https://dailaunch.online) · [github.com/dailaunch-bot/dailaunch](https://github.com/dailaunch-bot/dailaunch-)
 
 *Token Launchpad on Base · Powered by Clanker SDK v4*
 

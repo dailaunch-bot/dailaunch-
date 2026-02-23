@@ -3,7 +3,7 @@
 ## Clone the Repository
 
 ```bash
-git clone https://github.com/dailaunch-bot/dailaunch
+git clone https://github.com/dailaunch-bot/dailaunch-
 cd dailaunch
 ```
 
