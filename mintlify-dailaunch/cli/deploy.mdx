@@ -1,0 +1,102 @@
+---
+title: "deploy"
+---
+
+# 📦 deploy
+
+Deploy a new ERC-20 token to Base Mainnet interactively.
+
+## Usage
+
+```bash
+dailaunch deploy [options]
+```
+
+## Options
+
+| Option | Description |
+|--------|-------------|
+| `--testnet` | Simulation mode — no real transactions |
+
+## Interactive Prompts
+
+When you run `dailaunch deploy`, you will be prompted to fill in:
+
+| Field | Required | Max Length | Example |
+|-------|----------|------------|---------|
+| Token Name | ✅ | — | `My Awesome Token` |
+| Ticker Symbol | ✅ | 10 chars | `MAT` |
+| Twitter/X URL | ❌ | — | `https://twitter.com/mytoken` |
+| Website URL | ❌ | — | `https://mytoken.xyz` |
+| Logo URL | ❌ | — | `https://mytoken.xyz/logo.png` |
+
+## Example — Mainnet Deploy
+
+```bash
+dailaunch deploy
+```
+
+```
+⚡ DaiLaunch
+
+Checking GitHub authentication... ✔ GitHub: @yourusername
+
+📝 Token Details
+
+? Token Name: My Awesome Token
+? Ticker Symbol (e.g. DGRKT): MAT
+? Twitter/X URL (optional): https://twitter.com/mytoken
+? Website URL (optional): https://mytoken.xyz
+? Logo Image URL (optional):
+? Deploy My Awesome Token (MAT) to Base mainnet? Yes
+
+Deploying token to Base via Clanker... (may take 1-2 minutes)
+✔ Token deployed successfully!
+
+✅ Deployment Complete!
+
+  Token Name    : My Awesome Token
+  Symbol        : MAT
+  Contract      : 0xabc...def
+  Creator Wallet: 0x123...456
+  GitHub Repo   : https://github.com/yourusername/dailaunch-mat-1234567890
+  Token Info    : https://github.com/yourusername/dailaunch-mat-xxx/blob/main/token-info.json
+  TX Hash       : 0xfed...cba
+  BaseScan      : https://basescan.org/token/0xabc...def
+  DexScreener   : https://dexscreener.com/base/0xabc...def
+
+  💰 90% of all trading fees go to your creator wallet (10% to DaiLaunch platform)
+  📊 Run: dailaunch claim — to check your fee balance
+```
+
+## Example — Testnet (Simulation)
+
+```bash
+dailaunch deploy --testnet
+```
+
+```
+⚠️  TESTNET MODE — Simulation only, nothing will be deployed
+
+🧪 SIMULATION RESULT (not real)
+
+  Token Name    : My Awesome Token
+  Symbol        : MAT
+  Contract      : 0x1a2b3c... (simulated)
+  TX Hash       : 0xfed...  (simulated)
+  BaseScan      : https://sepolia.basescan.org/token/0x1a2b3c...
+
+  ✅ Simulation successful! Run without --testnet to deploy for real.
+```
+
+<Warning>
+**Deployment takes 1–2 minutes.** Do not close the terminal during this process. Clanker SDK needs to submit and confirm the transaction on Base Mainnet.
+</Warning>
+
+## What Happens After Deploy
+
+1. ✅ ERC-20 smart contract deployed on Base Mainnet via Clanker SDK
+2. ✅ Creator wallet auto-generated and encrypted (AES-256)
+3. ✅ GitHub repository created with `token-info.json` + `README.md`
+4. ✅ Token indexed on DexScreener & BaseScan
+5. ✅ 90% of every future trading fee flows permanently to your creator wallet

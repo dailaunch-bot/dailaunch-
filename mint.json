@@ -1,0 +1,83 @@
+{
+  "$schema": "https://mintlify.com/schema.json",
+  "name": "DaiLaunch",
+  "logo": {
+    "dark": "/logo/dark.svg",
+    "light": "/logo/light.svg"
+  },
+  "favicon": "/favicon.svg",
+  "colors": {
+    "primary": "#0052FF",
+    "light": "#4D8FFF",
+    "dark": "#0038B8",
+    "anchors": {
+      "from": "#0052FF",
+      "to": "#8B5CF6"
+    }
+  },
+  "topbarLinks": [
+    {
+      "name": "Dashboard",
+      "url": "https://dailaunch.online/dashboard"
+    }
+  ],
+  "topbarCtaButton": {
+    "name": "Get Started",
+    "url": "https://dailaunch.online"
+  },
+  "tabs": [],
+  "anchors": [
+    {
+      "name": "GitHub",
+      "icon": "github",
+      "url": "https://github.com/dailaunch-bot/dailaunch"
+    },
+    {
+      "name": "BaseScan",
+      "icon": "cube",
+      "url": "https://basescan.org"
+    }
+  ],
+  "navigation": [
+    {
+      "group": "Overview",
+      "pages": ["introduction"]
+    },
+    {
+      "group": "Getting Started",
+      "pages": [
+        "getting-started/quick-start",
+        "getting-started/prerequisites",
+        "getting-started/installation"
+      ]
+    },
+    {
+      "group": "CLI Reference",
+      "pages": [
+        "cli/deploy",
+        "cli/status",
+        "cli/claim",
+        "cli/exportkey"
+      ]
+    },
+    {
+      "group": "Architecture",
+      "pages": [
+        "architecture/structure",
+        "architecture/schema",
+        "architecture/fee-structure"
+      ]
+    },
+    {
+      "group": "Token",
+      "pages": [
+        "token/github-repo",
+        "token/track"
+      ]
+    }
+  ],
+  "footerSocials": {
+    "github": "https://github.com/dailaunch-bot/dailaunch",
+    "twitter": "https://twitter.com/dailaunch"
+  }
+}

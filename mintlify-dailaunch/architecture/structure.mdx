@@ -1,0 +1,70 @@
+---
+title: "Project Structure"
+---
+
+# 🗂 Project Structure
+
+DaiLaunch uses a **monorepo** architecture with 3 main packages: `api`, `cli`, and `dashboard`.
+
+```
+dailaunch/
+├── packages/
+│   ├── api/                        # Backend API — Express + TypeScript
+│   │   ├── prisma/
+│   │   │   ├── schema.prisma       # Database schema (PostgreSQL)
+│   │   │   └── migrations/         # Prisma migrations
+│   │   └── src/
+│   │       ├── index.ts            # API server entry point
+│   │       ├── middleware/
+│   │       │   └── auth.ts         # GitHub token verification
+│   │       ├── routes/
+│   │       │   ├── deploy.ts       # POST /api/deploy
+│   │       │   ├── tokens.ts       # GET  /api/tokens
+│   │       │   ├── stats.ts        # GET  /api/stats
+│   │       │   └── user.ts         # GET  /api/user
+│   │       └── services/
+│   │           ├── clanker.ts      # Clanker SDK deploy + fee config
+│   │           ├── github.ts       # Auto-create GitHub repo per token
+│   │           ├── indexer.ts      # Real-time price & market indexer
+│   │           └── wallet.ts       # Generate & encrypt creator wallet
+│   │
+│   ├── cli/                        # CLI Tool — npm package: dailaunch
+│   │   └── src/
+│   │       ├── index.ts            # CLI entry point
+│   │       ├── commands/
+│   │       │   ├── deploy.ts       # dailaunch deploy
+│   │       │   ├── status.ts       # dailaunch status
+│   │       │   ├── claim.ts        # dailaunch claim
+│   │       │   └── exportkey.ts    # dailaunch exportkey
+│   │       └── lib/
+│   │           ├── api.ts          # HTTP client to API
+│   │           └── github.ts       # GitHub token helper
+│   │
+│   └── dashboard/                  # Web Dashboard — Next.js
+│       └── src/
+│           ├── app/
+│           │   ├── page.tsx        # Main token list page
+│           │   └── token/[address] # Token detail page
+│           └── components/
+│               ├── DashboardClient.tsx
+│               └── TokenDetailClient.tsx
+│
+├── claim.js                        # Creator fee claim script
+├── setup.sh                        # Setup script (Linux/macOS)
+├── railway.toml                    # Railway deployment config
+└── README.md
+```
+
+## Tech Stack
+
+| Layer | Technology |
+|-------|-----------|
+| Blockchain | Base Mainnet (EVM L2) |
+| Smart Contract | Clanker SDK v4 |
+| Backend API | Node.js + Express + TypeScript |
+| Database | PostgreSQL + Prisma ORM |
+| CLI | Commander.js + Inquirer |
+| Dashboard | Next.js |
+| Auth | GitHub OAuth via `gh` CLI |
+| Encryption | AES-256 for creator private keys |
+| Hosting | Railway / self-host via Docker |

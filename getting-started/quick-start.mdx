@@ -1,0 +1,72 @@
+---
+title: "Quick Start"
+---
+
+# 🚀 Quick Start
+
+Get your first token live on Base Mainnet in under 2 minutes.
+
+## 1. Login to GitHub
+
+```bash
+gh auth login
+```
+
+Select: **GitHub.com** → **HTTPS** → **Login with a web browser**
+
+## 2. Clone & Install
+
+```bash
+git clone https://github.com/dailaunch-bot/dailaunch
+cd dailaunch
+```
+
+**Windows (PowerShell):**
+```powershell
+npm install
+npm run build:all
+npm install -g .\packages\cli
+```
+
+**Linux / macOS:**
+```bash
+npm install && npm run build:all && npm install -g ./packages/cli
+```
+
+## 3. Deploy Your Token
+
+```bash
+dailaunch deploy
+```
+
+Fill in the prompts:
+
+| Field | Example | Required |
+|-------|---------|----------|
+| Token Name | `My Awesome Token` | ✅ |
+| Symbol | `MAT` | ✅ |
+| Twitter/X URL | `https://twitter.com/mytoken` | ❌ |
+| Website URL | `https://mytoken.xyz` | ❌ |
+| Logo URL | `https://mytoken.xyz/logo.png` | ❌ |
+
+## 4. Your Token is Live!
+
+After a successful deploy you will see:
+
+```
+✅ Deployment Complete!
+
+  Token Name    : My Awesome Token
+  Symbol        : MAT
+  Contract      : 0xabc...def
+  Creator Wallet: 0x123...456
+  GitHub Repo   : https://github.com/username/dailaunch-mat-xxx
+  BaseScan      : https://basescan.org/token/0xabc...def
+  DexScreener   : https://dexscreener.com/base/0xabc...def
+
+  💰 90% of all trading fees go to your creator wallet
+```
+
+<Info>
+Want to test first without spending real gas? Use `dailaunch deploy --testnet` for a full simulation with no real transactions.
+</Info>
