@@ -23,4 +23,4 @@ COPY --from=builder /app/packages/dashboard/.next/static ./.next/static
 COPY --from=builder /app/packages/dashboard/public ./public 2>/dev/null || true
 
 EXPOSE 3000
-CMD ["node", "server.js"]
+CMD ["node", "packages/dashboard/server.js"]
