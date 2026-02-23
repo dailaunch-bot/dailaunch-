@@ -41,15 +41,16 @@ body {
 .flash-red { animation: flash-red 0.8s ease; }
 .fade-in { animation: fadeSlideIn 0.4s ease both; }
 
-/* ── FIX: Pause ticker saat hover agar klik token tidak meleset ── */
+/* ── FIX: Pause ticker saat hover agar klik tidak meleset ── */
 .ticker-wrapper:hover > div {
   animation-play-state: paused;
 }
 
-/* ── FIX: Token row pakai <a> tag, reset default browser link styles ── */
+/* ── FIX: Token row - width 100% supaya seluruh baris bisa diklik ── */
 a.token-row {
   display: flex;
   align-items: center;
+  width: 100%;          /* ← INI yang hilang, makanya area klik cuma sebagian */
   color: inherit;
   text-decoration: none;
   cursor: pointer;
