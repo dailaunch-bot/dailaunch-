@@ -243,7 +243,7 @@ export default function DashboardClient({ initialStats, initialTokens }: Props) 
           <div style={{ display:"flex", gap:4 }}>
             {([
               { label:"Dashboard", href:"/" },
-              { label:"Tokens",    href:"#tokens" },
+              { label:"Tokens",    href:"TokenDetailClient.tsx" },
               { label:"Docs",      href:"https://github.com/dailaunch-bot/dailaunch-", target:"_blank" },
             ] as Array<{ label:string; href:string; target?:string }>).map((tab, i)=>(
               <a key={tab.label} href={tab.href} target={tab.target}
