@@ -13,7 +13,8 @@ type Phase =
   | "confirm"
   | "deploying"
   | "done"
-  | "error";
+  | "error"
+  | "waiting_login";
 
 interface Line {
   text: string;
@@ -28,11 +29,33 @@ interface FormData {
   logoUrl: string;
 }
 
+interface AuthUser {
+  githubLogin:  string;
+  githubName:   string;
+  githubAvatar: string;
+  githubToken:  string;
+  expiresAt:    string;
+}
+
 const API = process.env.NEXT_PUBLIC_API_URL || "https://api.dailaunch.online";
+const STORAGE_KEY = "dailaunch_session";
 
 // ── Helpers ────────────────────────────────────────────────────────────────────
 function sleep(ms: number) {
   return new Promise((r) => setTimeout(r, ms));
+}
+
+function loadSession(): AuthUser | null {
+  try {
+    const stored = localStorage.getItem(STORAGE_KEY);
+    if (!stored) return null;
+    const parsed: AuthUser = JSON.parse(stored);
+    if (new Date(parsed.expiresAt) > new Date()) return parsed;
+    localStorage.removeItem(STORAGE_KEY);
+    return null;
+  } catch {
+    return null;
+  }
 }
 
 // ── Component ──────────────────────────────────────────────────────────────────
@@ -43,6 +66,7 @@ export default function CliPage() {
   const [form, setForm] = useState<FormData>({ name: "", symbol: "", twitter: "", website: "", logoUrl: "" });
   const [isTyping, setIsTyping] = useState(false);
   const [deployResult, setDeployResult] = useState<any>(null);
+  const [user, setUser] = useState<AuthUser | null>(null);
 
   const bottomRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
@@ -72,6 +96,58 @@ export default function CliPage() {
     },
     []
   );
+
+  // ── Handle ?session=xxx dari URL (dari dailaunch login di CLI atau OAuth redirect) ──
+  useEffect(() => {
+    const handleUrlSession = async () => {
+      const params = new URLSearchParams(window.location.search);
+      const sessionToken = params.get("session");
+      if (!sessionToken) return;
+
+      // Bersihkan token dari URL
+      window.history.replaceState({}, "", window.location.pathname);
+
+      try {
+        const res = await fetch(`${API}/auth/session?token=${sessionToken}`);
+        if (!res.ok) {
+          addLine("  ✗ Session invalid or expired.", "error");
+          return;
+        }
+        const data = await res.json();
+        const authUser: AuthUser = {
+          githubLogin:  data.githubLogin,
+          githubName:   data.githubName,
+          githubAvatar: data.githubAvatar,
+          githubToken:  data.githubToken,
+          expiresAt:    data.expiresAt,
+        };
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(authUser));
+        setUser(authUser);
+
+        const expiry = new Date(authUser.expiresAt).toLocaleString("id-ID");
+        await addLines([
+          ["", "blank"],
+          ["  ✅ login successful!", "success"],
+          ["", "blank"],
+          [`  GitHub  : @${authUser.githubLogin}`, "info"],
+          [`  Expires : ${expiry}`, "muted"],
+          ["", "blank"],
+          ["  Sekarang kamu bisa menjalankan  dailaunch deploy", "muted"],
+          ["", "blank"],
+        ], 60);
+        setPhase("idle");
+      } catch {
+        addLine("  ✗ Gagal verifikasi session.", "error");
+      }
+    };
+
+    // Restore session dari localStorage juga
+    const stored = loadSession();
+    if (stored) setUser(stored);
+
+    handleUrlSession();
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   // Boot sequence
   useEffect(() => {
@@ -115,31 +191,136 @@ export default function CliPage() {
 
     if (phase === "idle") {
       addLine(`$ ${val}`, "cmd");
+
+      // ── dailaunch login ──────────────────────────────────────────────────
+      if (val === "dailaunch login" || val === "login") {
+        const currentUser = loadSession();
+        if (currentUser) {
+          const expiry = new Date(currentUser.expiresAt).toLocaleString("id-ID");
+          await addLines([
+            ["", "blank"],
+            ["  ✅ Sudah login!", "success"],
+            [`  GitHub  : @${currentUser.githubLogin}`, "info"],
+            [`  Expires : ${expiry}`, "muted"],
+            ["", "blank"],
+            ["  Gunakan  dailaunch logout  untuk keluar.", "muted"],
+            ["", "blank"],
+          ], 50);
+          return;
+        }
+
+        await addLines([
+          ["", "blank"],
+          ["  ⚡ DaiLaunch Web Login", "info"],
+          ["  ──────────────────────────────", "muted"],
+          ["", "blank"],
+          ["  Menghubungkan ke GitHub OAuth...", "warn"],
+        ], 60);
+        await sleep(800);
+        await addLines([
+          ["  ✓ Redirect URL dibuat", "success"],
+          ["", "blank"],
+          ["  Membuka GitHub di browser...", "warn"],
+        ], 80);
+        await sleep(600);
+        addLine("", "blank");
+        addLine("  Kamu akan diarahkan ke GitHub untuk login.", "muted");
+        addLine("  Setelah login, kamu otomatis kembali ke halaman ini.", "muted");
+        addLine("", "blank");
+        setPhase("waiting_login");
+        await sleep(1200);
+        // Redirect ke GitHub OAuth, dengan callback kembali ke /cli
+        window.location.href = `${API}/auth/github?redirect=${encodeURIComponent(window.location.origin + "/cli")}`;
+        return;
+      }
+
+      // ── dailaunch logout ─────────────────────────────────────────────────
+      if (val === "dailaunch logout" || val === "logout") {
+        const currentUser = loadSession();
+        if (!currentUser && !user) {
+          await addLines([
+            ["", "blank"],
+            ["  Kamu belum login.", "warn"],
+            ["  Gunakan  dailaunch login  untuk login.", "muted"],
+            ["", "blank"],
+          ], 50);
+          return;
+        }
+        localStorage.removeItem(STORAGE_KEY);
+        setUser(null);
+        await addLines([
+          ["", "blank"],
+          ["  ✅ Logout berhasil.", "success"],
+          ["  Session telah dihapus.", "muted"],
+          ["", "blank"],
+          ["  Gunakan  dailaunch login  untuk login kembali.", "muted"],
+          ["", "blank"],
+        ], 60);
+        return;
+      }
+
+      // ── dailaunch whoami ─────────────────────────────────────────────────
+      if (val === "dailaunch whoami" || val === "whoami") {
+        const currentUser = loadSession();
+        if (!currentUser) {
+          await addLines([
+            ["", "blank"],
+            ["  Belum login. Gunakan  dailaunch login  terlebih dahulu.", "warn"],
+            ["", "blank"],
+          ], 50);
+          return;
+        }
+        const expiry = new Date(currentUser.expiresAt).toLocaleString("id-ID");
+        await addLines([
+          ["", "blank"],
+          [`  GitHub  : @${currentUser.githubLogin}`, "info"],
+          [`  Name    : ${currentUser.githubName || "-"}`, "muted"],
+          [`  Expires : ${expiry}`, "muted"],
+          ["", "blank"],
+        ], 50);
+        return;
+      }
+
+      // ── dailaunch deploy ─────────────────────────────────────────────────
       if (val === "dailaunch deploy" || val === "deploy") {
         await startDeploy();
-      } else if (val === "help") {
-        addLine("", "blank");
-        addLine("  Available commands:", "muted");
-        addLine("    dailaunch deploy   →  Deploy a new token to Base Mainnet", "muted");
-        addLine("    clear              →  Clear the terminal", "muted");
-        addLine("    help               →  Show this help", "muted");
-        addLine("", "blank");
-      } else if (val === "clear") {
+        return;
+      }
+
+      // ── help ─────────────────────────────────────────────────────────────
+      if (val === "help") {
+        await addLines([
+          ["", "blank"],
+          ["  Available commands:", "muted"],
+          ["    dailaunch login    →  Login dengan GitHub", "muted"],
+          ["    dailaunch logout   →  Logout dari session", "muted"],
+          ["    dailaunch whoami   →  Lihat info user yang sedang login", "muted"],
+          ["    dailaunch deploy   →  Deploy token baru ke Base Mainnet", "muted"],
+          ["    clear              →  Bersihkan terminal", "muted"],
+          ["    help               →  Tampilkan bantuan ini", "muted"],
+          ["", "blank"],
+        ], 40);
+        return;
+      }
+
+      // ── clear ─────────────────────────────────────────────────────────────
+      if (val === "clear") {
         setLines([]);
         addLine("", "blank");
         addLine("  Type  dailaunch deploy  to launch your token.", "muted");
         addLine("", "blank");
-      } else if (val === "") {
-        // ignore blank
-      } else {
-        addLine(`  command not found: ${val}`, "error");
-        addLine("  Type 'help' for available commands.", "muted");
-        addLine("", "blank");
+        return;
       }
+
+      if (val === "") return;
+
+      addLine(`  command not found: ${val}`, "error");
+      addLine("  Type 'help' for available commands.", "muted");
+      addLine("", "blank");
       return;
     }
 
-    // Step-by-step form
+    // ── Step-by-step form ──────────────────────────────────────────────────
     if (phase === "ask_name") {
       if (!val) { addLine("  ✗ Token name is required.", "error"); return; }
       addLine(`? Token Name: ${val}`, "prompt");
@@ -193,11 +374,13 @@ export default function CliPage() {
       if (val.toLowerCase() === "y" || val.toLowerCase() === "yes") {
         await runDeploy();
       } else {
-        addLine("", "blank");
-        addLine("  Deployment cancelled.", "warn");
-        addLine("", "blank");
-        addLine("  Type  dailaunch deploy  to start over.", "muted");
-        addLine("", "blank");
+        await addLines([
+          ["", "blank"],
+          ["  Deployment cancelled.", "warn"],
+          ["", "blank"],
+          ["  Type  dailaunch deploy  to start over.", "muted"],
+          ["", "blank"],
+        ], 50);
         setPhase("idle");
       }
       return;
@@ -236,6 +419,7 @@ export default function CliPage() {
   const runDeploy = async () => {
     setPhase("deploying");
     const currentForm = form;
+    const currentUser = loadSession();
 
     await addLines([
       ["", "blank"],
@@ -255,9 +439,16 @@ export default function CliPage() {
     addLine("", "blank");
 
     try {
-      const res = await fetch(`${API}/api/deploy/web`, {
+      // Jika user sudah login, pakai endpoint yang authenticated
+      const endpoint = currentUser
+        ? `${API}/api/deploy`
+        : `${API}/api/deploy/web`;
+      const headers: Record<string, string> = { "Content-Type": "application/json" };
+      if (currentUser) headers["x-github-token"] = currentUser.githubToken;
+
+      const res = await fetch(endpoint, {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers,
         body: JSON.stringify({
           name:    currentForm.name,
           symbol:  currentForm.symbol,
@@ -304,9 +495,11 @@ export default function CliPage() {
     }
   };
 
-  // ── Prompt label ────────────────────────────────────────────────────────────
+  // ── Prompt label ─────────────────────────────────────────────────────────
   const promptLabel = () => {
-    if (phase === "idle" || phase === "done" || phase === "error") return "$ ";
+    if (phase === "idle" || phase === "done" || phase === "error") {
+      return user ? `[${user.githubLogin}] $ ` : "$ ";
+    }
     return "> ";
   };
 
@@ -323,7 +516,7 @@ export default function CliPage() {
     }
   };
 
-  // ── Render ──────────────────────────────────────────────────────────────────
+  // ── Render ─────────────────────────────────────────────────────────────────
   return (
     <div
       style={{
@@ -354,6 +547,16 @@ export default function CliPage() {
           dailaunch — web terminal — base mainnet
         </span>
         <div style={{ marginLeft: "auto", display: "flex", alignItems: "center", gap: 8 }}>
+          {/* Status login di toolbar */}
+          {user ? (
+            <span style={{ fontSize: 11, color: "#00e5a0", background: "rgba(0,229,160,0.08)", border: "1px solid rgba(0,229,160,0.2)", padding: "2px 10px", borderRadius: 4 }}>
+              @{user.githubLogin}
+            </span>
+          ) : (
+            <span style={{ fontSize: 11, color: "#64748b", padding: "2px 10px" }}>
+              not logged in
+            </span>
+          )}
           <div
             style={{
               width: 7, height: 7, borderRadius: "50%", background: "#00e5a0",
@@ -391,7 +594,6 @@ export default function CliPage() {
           </div>
         ))}
 
-        {/* Typing indicator */}
         {isTyping && (
           <div style={{ color: "#4a4a6a", fontSize: 13 }}>▋</div>
         )}
@@ -400,7 +602,7 @@ export default function CliPage() {
       </div>
 
       {/* Input area */}
-      {phase !== "deploying" && (
+      {phase !== "deploying" && phase !== "waiting_login" && (
         <div
           style={{
             padding: "12px 24px 20px",
@@ -419,7 +621,6 @@ export default function CliPage() {
               ref={inputRef}
               value={input}
               onChange={(e) => setInput(e.target.value)}
-              disabled={false}
               autoComplete="off"
               spellCheck={false}
               style={{
@@ -478,7 +679,6 @@ export default function CliPage() {
                   textDecoration: "none",
                   fontSize: 12,
                   fontFamily: "inherit",
-                  transition: "border-color 0.15s",
                 }}
                 onMouseEnter={(e) => (e.currentTarget.style.borderColor = "#6a32f0")}
                 onMouseLeave={(e) => (e.currentTarget.style.borderColor = "#1e1e3a")}
