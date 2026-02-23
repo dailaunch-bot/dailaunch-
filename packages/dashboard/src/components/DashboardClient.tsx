@@ -75,6 +75,11 @@ export default function DashboardClient({ initialStats, initialTokens }: Props) 
   const [cliLines, setCliLines] = useState<Array<{html: string}>>([]);
   const cliTermRef = useRef<HTMLDivElement>(null);
 
+  // Token form input state (manual input dari user)
+  const [tokenForm, setTokenForm] = useState({ name:"", symbol:"", twitter:"", website:"" });
+  const [tokenFormError, setTokenFormError] = useState("");
+  const [showForm, setShowForm] = useState(false);
+
   // Sync cliStep with auth state when modal is open
   useEffect(() => {
     if (cliModalOpen) {
@@ -99,6 +104,9 @@ export default function DashboardClient({ initialStats, initialTokens }: Props) 
     setCliRunning(false);
     setCliDone(false);
     setCliLines([]);
+    setTokenForm({ name:"", symbol:"", twitter:"", website:"" });
+    setTokenFormError("");
+    setShowForm(true); // tampilkan form input dulu
   };
 
   const cliSleep = (ms: number) => new Promise(r => setTimeout(r, ms));
@@ -110,6 +118,13 @@ export default function DashboardClient({ initialStats, initialTokens }: Props) 
 
   const runCliDeploy = async () => {
     if (cliRunning || !user) return;
+
+    // Validasi form
+    if (!tokenForm.name.trim()) { setTokenFormError("Token name wajib diisi"); return; }
+    if (!tokenForm.symbol.trim()) { setTokenFormError("Symbol wajib diisi"); return; }
+    if (tokenForm.symbol.trim().length > 10) { setTokenFormError("Symbol maksimal 10 karakter"); return; }
+    setTokenFormError("");
+    setShowForm(false); // sembunyikan form, tampilkan terminal
     setCliRunning(true);
 
     const clr = { purple:"#a87fff", green:"#00e5a0", yellow:"#f59e0b", muted:"#64748b" };
@@ -124,16 +139,23 @@ export default function DashboardClient({ initialStats, initialTokens }: Props) 
 
     setCliStep(3);
 
+    // Tampilkan data yang diisi user di terminal
     await appendLines([
-      `<div style="color:${clr.muted}">? Token Name: <span style="color:${clr.green}">My Awesome Token</span></div>`,
-    ], 400);
+      `<div style="color:${clr.muted}">? Token Name: <span style="color:${clr.green}">${tokenForm.name}</span></div>`,
+    ], 300);
     await appendLines([
-      `<div style="color:${clr.muted}">? Symbol (max 10 chars): <span style="color:${clr.green}">MAT</span></div>`,
-    ], 600);
-    await appendLines([
-      `<div style="color:${clr.muted}">? Twitter/X URL (optional): <span style="color:${clr.green}">https://x.com/mytoken</span></div>`,
-      `<div style="color:${clr.muted}">? Website URL (optional): <span style="color:${clr.green}">https://mytoken.xyz</span></div>`,
-    ], 350);
+      `<div style="color:${clr.muted}">? Symbol (max 10 chars): <span style="color:${clr.green}">${tokenForm.symbol.toUpperCase()}</span></div>`,
+    ], 300);
+    if (tokenForm.twitter) {
+      await appendLines([
+        `<div style="color:${clr.muted}">? Twitter/X URL: <span style="color:${clr.green}">${tokenForm.twitter}</span></div>`,
+      ], 200);
+    }
+    if (tokenForm.website) {
+      await appendLines([
+        `<div style="color:${clr.muted}">? Website URL: <span style="color:${clr.green}">${tokenForm.website}</span></div>`,
+      ], 200);
+    }
 
     await cliSleep(400);
     await appendLines([
@@ -158,10 +180,10 @@ export default function DashboardClient({ initialStats, initialTokens }: Props) 
           "x-github-token": user.githubToken,
         },
         body: JSON.stringify({
-          name: "My Awesome Token",
-          symbol: "MAT",
-          twitter: "https://x.com/mytoken",
-          website: "https://mytoken.xyz",
+          name: tokenForm.name.trim(),
+          symbol: tokenForm.symbol.trim().toUpperCase(),
+          twitter: tokenForm.twitter.trim() || undefined,
+          website: tokenForm.website.trim() || undefined,
         }),
       });
 
@@ -346,10 +368,10 @@ export default function DashboardClient({ initialStats, initialTokens }: Props) 
                   href={`/token/${token.contractAddress}`}
                   className="token-row fade-in"
                   style={{
-                    display:"flex", alignItems:"center", padding:"12px 16px",
-                    borderBottom:S.border, borderRadius:8, transition:"background .15s",
-                    animationDelay:`${i*.04}s`, textDecoration:"none",
-                    // animationDelay perlu di-set via style karena tidak ada className dinamis
+                    display:"flex", alignItems:"center", width:"100%",
+                    padding:"12px 16px", borderBottom:S.border, borderRadius:8,
+                    transition:"background .15s", animationDelay:`${i*.04}s`,
+                    textDecoration:"none",
                   }}
                   onMouseEnter={e=>(e.currentTarget.style.background="rgba(106,32,240,.06)")}
                   onMouseLeave={e=>(e.currentTarget.style.background="transparent")}
@@ -498,11 +520,75 @@ export default function DashboardClient({ initialStats, initialTokens }: Props) 
                   <div style={{ color:"#3d3d5c" }}># ── Step 3: Deploy your token ──────────────────────</div>
                   <div><span style={{ color:S.purpleL }}>$ </span><span style={{ color:"#a87fff" }}>dailaunch deploy</span></div>
 
+                  {/* ── FORM INPUT MANUAL ── */}
+                  {showForm && !cliRunning && !cliDone && (
+                    <div style={{ marginTop:14, padding:"14px 16px", background:"rgba(106,32,240,0.08)", border:"1px solid rgba(106,32,240,0.25)", borderRadius:10 }}>
+                      {/* Token Name */}
+                      <div style={{ marginBottom:10 }}>
+                        <div style={{ fontSize:11, color:S.dim, fontFamily:S.mono, marginBottom:4 }}>
+                          <span style={{ color:S.purpleL }}>?</span> Token Name <span style={{ color:S.red }}>*</span>
+                        </div>
+                        <input
+                          type="text"
+                          placeholder="My Awesome Token"
+                          value={tokenForm.name}
+                          onChange={e => setTokenForm(f => ({ ...f, name: e.target.value }))}
+                          style={{ width:"100%", padding:"8px 12px", background:"rgba(255,255,255,0.05)", border:"1px solid rgba(120,60,255,0.3)", borderRadius:7, color:S.text, fontSize:13, outline:"none", fontFamily:S.mono }}
+                        />
+                      </div>
+                      {/* Symbol */}
+                      <div style={{ marginBottom:10 }}>
+                        <div style={{ fontSize:11, color:S.dim, fontFamily:S.mono, marginBottom:4 }}>
+                          <span style={{ color:S.purpleL }}>?</span> Symbol <span style={{ color:S.muted, fontSize:10 }}>(max 10 chars)</span> <span style={{ color:S.red }}>*</span>
+                        </div>
+                        <input
+                          type="text"
+                          placeholder="MAT"
+                          maxLength={10}
+                          value={tokenForm.symbol}
+                          onChange={e => setTokenForm(f => ({ ...f, symbol: e.target.value.toUpperCase() }))}
+                          style={{ width:"100%", padding:"8px 12px", background:"rgba(255,255,255,0.05)", border:"1px solid rgba(120,60,255,0.3)", borderRadius:7, color:S.green, fontSize:13, outline:"none", fontFamily:S.mono, letterSpacing:"0.05em" }}
+                        />
+                      </div>
+                      {/* Twitter */}
+                      <div style={{ marginBottom:10 }}>
+                        <div style={{ fontSize:11, color:S.dim, fontFamily:S.mono, marginBottom:4 }}>
+                          <span style={{ color:S.purpleL }}>?</span> Twitter/X URL <span style={{ color:S.muted, fontSize:10 }}>(optional)</span>
+                        </div>
+                        <input
+                          type="text"
+                          placeholder="https://x.com/yourtoken"
+                          value={tokenForm.twitter}
+                          onChange={e => setTokenForm(f => ({ ...f, twitter: e.target.value }))}
+                          style={{ width:"100%", padding:"8px 12px", background:"rgba(255,255,255,0.05)", border:"1px solid rgba(120,60,255,0.2)", borderRadius:7, color:S.text, fontSize:13, outline:"none", fontFamily:S.mono }}
+                        />
+                      </div>
+                      {/* Website */}
+                      <div style={{ marginBottom:tokenFormError ? 10 : 0 }}>
+                        <div style={{ fontSize:11, color:S.dim, fontFamily:S.mono, marginBottom:4 }}>
+                          <span style={{ color:S.purpleL }}>?</span> Website URL <span style={{ color:S.muted, fontSize:10 }}>(optional)</span>
+                        </div>
+                        <input
+                          type="text"
+                          placeholder="https://yourtoken.xyz"
+                          value={tokenForm.website}
+                          onChange={e => setTokenForm(f => ({ ...f, website: e.target.value }))}
+                          style={{ width:"100%", padding:"8px 12px", background:"rgba(255,255,255,0.05)", border:"1px solid rgba(120,60,255,0.2)", borderRadius:7, color:S.text, fontSize:13, outline:"none", fontFamily:S.mono }}
+                        />
+                      </div>
+                      {/* Error */}
+                      {tokenFormError && (
+                        <div style={{ fontSize:12, color:S.red, fontFamily:S.mono, marginTop:8 }}>❌ {tokenFormError}</div>
+                      )}
+                    </div>
+                  )}
+
+                  {/* Dynamic terminal lines saat deploy berjalan */}
                   {cliLines.map((l, i) => (
                     <div key={i} dangerouslySetInnerHTML={{ __html: l.html }} />
                   ))}
 
-                  {!cliRunning && !cliDone && (
+                  {!cliRunning && !cliDone && !showForm && (
                     <div>
                       <span style={{ display:"inline-block", width:8, height:13, background:S.purpleL, verticalAlign:"middle", animation:"blink 1s infinite" }} />
                     </div>
@@ -541,7 +627,7 @@ export default function DashboardClient({ initialStats, initialTokens }: Props) 
                 ) : (
                   <button onClick={runCliDeploy} disabled={cliRunning}
                     style={{ display:"flex", alignItems:"center", gap:7, padding:"9px 20px", background:cliRunning?"rgba(106,32,240,.3)":S.purple, border:"none", borderRadius:10, color:"white", fontFamily:S.sans, fontSize:13, fontWeight:700, cursor:cliRunning?"not-allowed":"pointer", opacity:cliRunning?.7:1 }}>
-                    {cliRunning ? "⏳ Deploying..." : "⚡ Run dailaunch deploy"}
+                    {cliRunning ? "⏳ Deploying..." : showForm ? "⚡ Deploy Token" : "⚡ Run dailaunch deploy"}
                   </button>
                 )}
               </div>
