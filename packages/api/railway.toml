@@ -3,4 +3,4 @@ builder = "DOCKERFILE"
 dockerfilePath = "Dockerfile"
 
 [deploy]
-startCommand = "npx prisma migrate deploy && npx ts-node --transpile-only src/index.ts"
+startCommand = "npx ts-node --transpile-only src/index.ts"
