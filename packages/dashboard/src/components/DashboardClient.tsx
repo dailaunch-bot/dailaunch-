@@ -80,6 +80,17 @@ export default function DashboardClient({ initialStats, initialTokens }: Props) 
   const [cliLines, setCliLines] = useState<Array<{html: string}>>([]);
   const cliTermRef = useRef<HTMLDivElement>(null);
 
+  // Sync cliStep with auth state when modal is open
+  useEffect(() => {
+    if (cliModalOpen) {
+      if (user) {
+        setCliStep(3);
+      } else {
+        setCliStep(2);
+      }
+    }
+  }, [user, cliModalOpen]);
+
   // ── Token list ─────────────────────────────────────────────────────────────
   const fetchTokens = useCallback(async (p: number, s: string, q: string) => {
     setLoading(true);
@@ -93,7 +104,7 @@ export default function DashboardClient({ initialStats, initialTokens }: Props) 
   // ── Deploy modal ───────────────────────────────────────────────────────────
   const openDeploy = () => {
     setCliModalOpen(true);
-    setCliStep(2);
+    setCliStep(user ? 3 : 2);
     setCliRunning(false);
     setCliDone(false);
     setCliLines([]);
@@ -107,7 +118,7 @@ export default function DashboardClient({ initialStats, initialTokens }: Props) 
   };
 
   const runCliDeploy = async () => {
-    if (cliRunning) return;
+    if (cliRunning || !user) return;
     setCliRunning(true);
 
     const clr = { purple:"#a87fff", green:"#00e5a0", yellow:"#f59e0b", muted:"#64748b" };
@@ -146,25 +157,54 @@ export default function DashboardClient({ initialStats, initialTokens }: Props) 
     await appendLines([
       `<div style="color:${clr.yellow}">⏳ Deploying via Clanker SDK v4... (1-2 min)</div>`,
     ], 100);
-    await cliSleep(1200);
 
-    setCliStep(4);
+    try {
+      const API = process.env.NEXT_PUBLIC_API_URL || "https://api.dailaunch.online";
+      const res = await fetch(`${API}/api/deploy`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "x-github-token": user.githubToken,
+        },
+        body: JSON.stringify({
+          name: "My Awesome Token",
+          symbol: "MAT",
+          twitter: "https://x.com/mytoken",
+          website: "https://mytoken.xyz",
+        }),
+      });
 
-    await appendLines([
-      `<div>&nbsp;</div>`,
-      `<div style="color:${clr.green};font-weight:700">✅ Deployment Complete!</div>`,
-      `<div>&nbsp;</div>`,
-      `<div style="color:${clr.muted}">  Contract : <span style="color:${clr.purple}">0xabc...def123</span></div>`,
-      `<div style="color:${clr.muted}">  Wallet   : <span style="color:${clr.purple}">0x123...456abc</span></div>`,
-      `<div style="color:${clr.muted}">  GitHub   : <span style="color:${clr.purple}">github.com/youruser/dailaunch-mat</span></div>`,
-      `<div style="color:${clr.muted}">  TX       : <span style="color:${clr.purple}">0xfed...cba987</span></div>`,
-      `<div>&nbsp;</div>`,
-      `<div style="color:${clr.green}">  💰 90% of all trading fees → your wallet. Forever.</div>`,
-      `<div>&nbsp;</div>`,
-      `<div style="color:${clr.purple}">$ <span style="display:inline-block;width:8px;height:13px;background:${clr.purple};vertical-align:middle;animation:blink 1s infinite"></span></div>`,
-    ], 80);
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || "Deploy failed");
 
-    setCliDone(true);
+      setCliStep(4);
+
+      await appendLines([
+        `<div>&nbsp;</div>`,
+        `<div style="color:${clr.green};font-weight:700">✅ Deployment Complete!</div>`,
+        `<div>&nbsp;</div>`,
+        `<div style="color:${clr.muted}">  Contract : <span style="color:${clr.purple}">${data.contractAddress}</span></div>`,
+        `<div style="color:${clr.muted}">  Wallet   : <span style="color:${clr.purple}">${data.creatorWallet}</span></div>`,
+        `<div style="color:${clr.muted}">  GitHub   : <span style="color:${clr.purple}">${data.githubRepo}</span></div>`,
+        `<div style="color:${clr.muted}">  TX       : <span style="color:${clr.purple}">${data.txHash}</span></div>`,
+        `<div>&nbsp;</div>`,
+        `<div style="color:${clr.green}">  💰 90% of all trading fees → your wallet. Forever.</div>`,
+        `<div>&nbsp;</div>`,
+        `<div style="color:${clr.purple}">$ <span style="display:inline-block;width:8px;height:13px;background:${clr.purple};vertical-align:middle;animation:blink 1s infinite"></span></div>`,
+      ], 80);
+
+      setCliDone(true);
+      setTimeout(() => fetchTokens(1, sort, search), 2500);
+
+    } catch (err: any) {
+      setCliStep(3);
+      await appendLines([
+        `<div>&nbsp;</div>`,
+        `<div style="color:#ff4466">❌ Error: ${err.message}</div>`,
+        `<div style="color:${clr.muted}">  Coba lagi atau hubungi support.</div>`,
+      ], 80);
+      setCliRunning(false);
+    }
   };
 
   // ── Render ─────────────────────────────────────────────────────────────────
@@ -428,32 +468,51 @@ export default function DashboardClient({ initialStats, initialTokens }: Props) 
             {/* Terminal */}
             <div ref={cliTermRef} style={{ background:"#06060f", padding:"16px 18px", fontFamily:S.mono, fontSize:12, lineHeight:1.9, maxHeight:360, overflowY:"auto", minHeight:200 }}>
 
-              {/* Static steps 1 & 2 - always shown */}
+              {/* Step 1 - Install CLI - always shown as done */}
               <div style={{ color:"#3d3d5c" }}># ── Step 1: Install DaiLaunch CLI ─────────────────</div>
               <div><span style={{ color:S.purpleL }}>$ </span><span style={{ color:"#a87fff" }}>git clone https://github.com/dailaunch-bot/dailaunch-</span></div>
               <div><span style={{ color:S.purpleL }}>$ </span><span style={{ color:"#a87fff" }}>cd dailaunch- &amp;&amp; npm install &amp;&amp; npm run build:all</span></div>
               <div><span style={{ color:S.purpleL }}>$ </span><span style={{ color:"#a87fff" }}>npm install -g ./packages/cli</span></div>
               <div style={{ color:S.green }}>✓ dailaunch v1.0.0 installed</div>
               <div>&nbsp;</div>
+
+              {/* Step 2 - GitHub Auth */}
               <div style={{ color:"#3d3d5c" }}># ── Step 2: Authenticate with GitHub ───────────────</div>
               <div><span style={{ color:S.purpleL }}>$ </span><span style={{ color:"#a87fff" }}>gh auth login</span></div>
-              <div style={{ color:S.muted }}>? What account do you want to log into? <span style={{ color:S.green }}>GitHub.com</span></div>
-              <div style={{ color:S.muted }}>? How would you like to authenticate? <span style={{ color:S.green }}>Login with a web browser</span></div>
-              <div style={{ color:S.green }}>✓ Logged in as @youruser</div>
-              <div>&nbsp;</div>
-              <div style={{ color:"#3d3d5c" }}># ── Step 3: Deploy your token ──────────────────────</div>
-              <div><span style={{ color:S.purpleL }}>$ </span><span style={{ color:"#a87fff" }}>dailaunch deploy</span></div>
 
-              {/* Dynamic lines added during animation */}
-              {cliLines.map((l, i) => (
-                <div key={i} dangerouslySetInnerHTML={{ __html: l.html }} />
-              ))}
+              {user ? (
+                // Already logged in
+                <>
+                  <div style={{ color:S.muted }}>? What account do you want to log into? <span style={{ color:S.green }}>GitHub.com</span></div>
+                  <div style={{ color:S.muted }}>? How would you like to authenticate? <span style={{ color:S.green }}>Login with a web browser</span></div>
+                  <div style={{ color:S.green }}>✓ Logged in as @{user.githubLogin}</div>
+                  <div>&nbsp;</div>
 
-              {/* Blinking cursor when idle */}
-              {!cliRunning && !cliDone && (
-                <div>
-                  <span style={{ display:"inline-block", width:8, height:13, background:S.purpleL, verticalAlign:"middle", animation:"blink 1s infinite" }} />
-                </div>
+                  {/* Step 3 - Deploy */}
+                  <div style={{ color:"#3d3d5c" }}># ── Step 3: Deploy your token ──────────────────────</div>
+                  <div><span style={{ color:S.purpleL }}>$ </span><span style={{ color:"#a87fff" }}>dailaunch deploy</span></div>
+
+                  {/* Dynamic lines added during animation */}
+                  {cliLines.map((l, i) => (
+                    <div key={i} dangerouslySetInnerHTML={{ __html: l.html }} />
+                  ))}
+
+                  {/* Blinking cursor when idle */}
+                  {!cliRunning && !cliDone && (
+                    <div>
+                      <span style={{ display:"inline-block", width:8, height:13, background:S.purpleL, verticalAlign:"middle", animation:"blink 1s infinite" }} />
+                    </div>
+                  )}
+                </>
+              ) : (
+                // Not logged in - show auth prompt
+                <>
+                  <div style={{ color:S.muted }}>? What account do you want to log into? <span style={{ color:S.green }}>GitHub.com</span></div>
+                  <div style={{ color:S.muted }}>? How would you like to authenticate? <span style={{ color:S.green }}>Login with a web browser</span></div>
+                  <div style={{ color:"#f59e0b" }}>⏳ Waiting for GitHub authentication...</div>
+                  <div>&nbsp;</div>
+                  <div style={{ color:"#3d3d5c" }}># Click the button below to authenticate ↓</div>
+                </>
               )}
             </div>
 
@@ -464,14 +523,24 @@ export default function DashboardClient({ initialStats, initialTokens }: Props) 
               </div>
               <div style={{ display:"flex", gap:8 }}>
                 {cliDone ? (
-                  <button onClick={()=>setCliModalOpen(false)}
+                  <button onClick={()=>{ setCliModalOpen(false); fetchTokens(1, sort, search); }}
                     style={{ padding:"9px 20px", background:"rgba(0,229,160,.15)", border:"1px solid rgba(0,229,160,.35)", borderRadius:10, color:S.green, fontFamily:S.sans, fontSize:13, fontWeight:700, cursor:"pointer" }}>
                     🎉 Token Deployed!
                   </button>
+                ) : !user ? (
+                  // Not logged in → GitHub OAuth button
+                  <a href="https://api.dailaunch.online/auth/github"
+                    style={{ display:"flex", alignItems:"center", gap:8, padding:"9px 20px", background:"#24292e", border:"1px solid rgba(255,255,255,.15)", borderRadius:10, color:"white", fontFamily:S.sans, fontSize:13, fontWeight:700, textDecoration:"none", cursor:"pointer" }}>
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="white">
+                      <path d="M12 0C5.37 0 0 5.37 0 12c0 5.31 3.435 9.795 8.205 11.385.6.105.825-.255.825-.57 0-.285-.015-1.23-.015-2.235-3.015.555-3.795-.735-4.035-1.41-.135-.345-.72-1.41-1.23-1.695-.42-.225-1.02-.78-.015-.795.945-.015 1.62.87 1.845 1.23 1.08 1.815 2.805 1.305 3.495.99.105-.78.42-1.305.765-1.605-2.67-.3-5.46-1.335-5.46-5.925 0-1.305.465-2.385 1.23-3.225-.12-.3-.54-1.53.12-3.18 0 0 1.005-.315 3.3 1.23.96-.27 1.98-.405 3-.405s2.04.135 3 .405c2.295-1.56 3.3-1.23 3.3-1.23.66 1.65.24 2.88.12 3.18.765.84 1.23 1.905 1.23 3.225 0 4.605-2.805 5.625-5.475 5.925.435.375.81 1.095.81 2.22 0 1.605-.015 2.895-.015 3.3 0 .315.225.69.825.57A12.02 12.02 0 0 0 24 12c0-6.63-5.37-12-12-12z"/>
+                    </svg>
+                    Login with GitHub
+                  </a>
                 ) : (
+                  // Logged in → deploy button
                   <button onClick={runCliDeploy} disabled={cliRunning}
                     style={{ display:"flex", alignItems:"center", gap:7, padding:"9px 20px", background:cliRunning?"rgba(106,32,240,.3)":S.purple, border:"none", borderRadius:10, color:"white", fontFamily:S.sans, fontSize:13, fontWeight:700, cursor:cliRunning?"not-allowed":"pointer", opacity:cliRunning?.7:1 }}>
-                    {cliRunning ? "⏳ Running..." : "⚡ Run dailaunch deploy"}
+                    {cliRunning ? "⏳ Deploying..." : "⚡ Run dailaunch deploy"}
                   </button>
                 )}
               </div>
