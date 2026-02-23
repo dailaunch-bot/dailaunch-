@@ -38,6 +38,7 @@ interface AuthUser {
 }
 
 const API = process.env.NEXT_PUBLIC_API_URL || "https://api.dailaunch.online";
+const AUTH_URL = "https://api.dailaunch.online"; // hardcoded - jangan pakai env var untuk auth
 const STORAGE_KEY = "dailaunch_session";
 
 // ── Helpers ────────────────────────────────────────────────────────────────────
@@ -230,7 +231,7 @@ export default function CliPage() {
         setPhase("waiting_login");
         await sleep(1200);
         // Redirect ke GitHub OAuth (backend sudah handle callback ke dashboard)
-        window.location.href = `${API}/auth/github`;
+        window.location.href = `${AUTH_URL}/auth/github`;
         return;
       }
 
