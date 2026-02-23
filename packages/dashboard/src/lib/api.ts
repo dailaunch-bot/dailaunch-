@@ -1,5 +1,5 @@
 // Hardcode API URL - NEXT_PUBLIC_ vars harus ada saat build time
-const API = process.env.NEXT_PUBLIC_API_URL || 'https://api.dailaunch.online';
+const API = 'https://api.dailaunch.online';
 
 export async function getStats() {
   const res = await fetch(`${API}/api/stats`, { next: { revalidate: 30 } });
