@@ -39,11 +39,6 @@ const S = {
   surface:"var(--surface)", surface2:"var(--surface2)",
 };
 
-const input: React.CSSProperties = {
-  width:"100%", padding:"10px 14px", background:"rgba(255,255,255,0.04)",
-  border:"1px solid var(--border-bright)", borderRadius:8, color:S.text,
-  fontSize:13, outline:"none", fontFamily:S.sans, marginTop:6,
-};
 const lbl: React.CSSProperties = {
   fontSize:11, fontFamily:S.mono, color:S.dim,
   textTransform:"uppercase", letterSpacing:"0.08em",
@@ -63,7 +58,7 @@ export default function DashboardClient({ initialStats, initialTokens }: Props) 
   // ── Auth ───────────────────────────────────────────────────────────────────
   const { user, loading: authLoading, logout } = useAuth();
 
-  // Deploy modal state (kept for type compatibility)
+  // Deploy modal state
   const [deployOpen, setDeployOpen] = useState(false);
   const [deployStep, setDeployStep] = useState<DeployStep>("form");
   const [form, setForm] = useState({ name:"", symbol:"", twitter:"", website:"", logoUrl:"" });
@@ -74,7 +69,7 @@ export default function DashboardClient({ initialStats, initialTokens }: Props) 
 
   // CLI modal state
   const [cliModalOpen, setCliModalOpen] = useState(false);
-  const [cliStep, setCliStep] = useState(2); // 1=Install CLI, 2=GitHub Auth, 3=Deploy, 4=Live!
+  const [cliStep, setCliStep] = useState(2);
   const [cliRunning, setCliRunning] = useState(false);
   const [cliDone, setCliDone] = useState(false);
   const [cliLines, setCliLines] = useState<Array<{html: string}>>([]);
@@ -83,11 +78,7 @@ export default function DashboardClient({ initialStats, initialTokens }: Props) 
   // Sync cliStep with auth state when modal is open
   useEffect(() => {
     if (cliModalOpen) {
-      if (user) {
-        setCliStep(3);
-      } else {
-        setCliStep(2);
-      }
+      if (user) { setCliStep(3); } else { setCliStep(2); }
     }
   }, [user, cliModalOpen]);
 
@@ -284,19 +275,25 @@ export default function DashboardClient({ initialStats, initialTokens }: Props) 
           ))}
         </div>
 
-        {/* ── TICKER ── */}
+        {/* ── TICKER ──
+            FIX: Wrapper pakai className "ticker-wrapper" agar CSS bisa pause animasi saat hover.
+                 Setiap item pakai <a> tag bukan onClick agar klik selalu reliable. */}
         {tokens.length > 0 && (
-          <div style={{ overflow:"hidden", borderBottom:S.border, background:"rgba(106,32,240,.03)" }}>
+          <div className="ticker-wrapper" style={{ overflow:"hidden", borderBottom:S.border, background:"rgba(106,32,240,.03)" }}>
             <div style={{ display:"flex", width:"max-content", animation:"ticker-scroll 30s linear infinite" }}>
               {tickerItems.map((t,i)=>(
-                <div key={i} onClick={()=>router.push(`/token/${t.contractAddress}`)}
-                  style={{ display:"flex", alignItems:"center", gap:8, padding:"8px 24px", borderRight:S.border, cursor:"pointer", whiteSpace:"nowrap" }}>
+                // ✅ FIX: Pakai <a href> bukan onClick + router.push agar klik tidak gagal saat animasi berjalan
+                <a
+                  key={i}
+                  href={`/token/${t.contractAddress}`}
+                  style={{ display:"flex", alignItems:"center", gap:8, padding:"8px 24px", borderRight:S.border, cursor:"pointer", whiteSpace:"nowrap", textDecoration:"none" }}
+                >
                   <span style={{ fontFamily:S.mono, fontSize:12, fontWeight:700, color:S.text }}>{t.symbol}</span>
                   <span style={{ fontFamily:S.mono, fontSize:11, color:S.muted }}>{t.marketCap>0?fmt(t.marketCap):"—"}</span>
                   <span style={{ fontFamily:S.mono, fontSize:11, fontWeight:700, color:(t.priceChange24h??0)>=0?S.green:S.red }}>
                     {(t.priceChange24h??0)>=0?"+":""}{(t.priceChange24h??0).toFixed(1)}%
                   </span>
-                </div>
+                </a>
               ))}
             </div>
           </div>
@@ -340,10 +337,23 @@ export default function DashboardClient({ initialStats, initialTokens }: Props) 
             ) : tokens.map((token,i)=>{
               const ch = token.priceChange24h??0; const isUp = ch>=0;
               return (
-                <div key={token.id} className="fade-in" onClick={()=>router.push(`/token/${token.contractAddress}`)}
-                  style={{ display:"flex", alignItems:"center", padding:"12px 16px", borderBottom:S.border, cursor:"pointer", borderRadius:8, transition:"background .15s", animationDelay:`${i*.04}s` }}
+                // ✅ FIX UTAMA: Pakai <a href> bukan <div onClick + router.push>
+                // Ini yang menyebabkan token detail tidak bisa diklik.
+                // <a> tag adalah native HTML sehingga klik selalu berfungsi,
+                // termasuk klik kanan → "Open in new tab".
+                <a
+                  key={token.id}
+                  href={`/token/${token.contractAddress}`}
+                  className="token-row fade-in"
+                  style={{
+                    display:"flex", alignItems:"center", padding:"12px 16px",
+                    borderBottom:S.border, borderRadius:8, transition:"background .15s",
+                    animationDelay:`${i*.04}s`, textDecoration:"none",
+                    // animationDelay perlu di-set via style karena tidak ada className dinamis
+                  }}
                   onMouseEnter={e=>(e.currentTarget.style.background="rgba(106,32,240,.06)")}
-                  onMouseLeave={e=>(e.currentTarget.style.background="transparent")}>
+                  onMouseLeave={e=>(e.currentTarget.style.background="transparent")}
+                >
                   <div style={{ flex:"2", display:"flex", alignItems:"center", gap:12 }}>
                     <div style={{ width:36, height:36, borderRadius:"50%", background:avatarBg(token.contractAddress), display:"flex", alignItems:"center", justifyContent:"center", fontSize:13, fontWeight:700, color:S.text, flexShrink:0 }}>
                       {(token.symbol??"?")[0]}
@@ -363,7 +373,7 @@ export default function DashboardClient({ initialStats, initialTokens }: Props) 
                     </span>
                   </div>
                   <div style={{ flex:"1", textAlign:"right", fontSize:11, color:S.dim, fontFamily:S.mono }}>{timeAgo(token.deployedAt)} ago</div>
-                </div>
+                </a>
               );
             })}
 
@@ -468,7 +478,6 @@ export default function DashboardClient({ initialStats, initialTokens }: Props) 
             {/* Terminal */}
             <div ref={cliTermRef} style={{ background:"#06060f", padding:"16px 18px", fontFamily:S.mono, fontSize:12, lineHeight:1.9, maxHeight:360, overflowY:"auto", minHeight:200 }}>
 
-              {/* Step 1 - Install CLI - always shown as done */}
               <div style={{ color:"#3d3d5c" }}># ── Step 1: Install DaiLaunch CLI ─────────────────</div>
               <div><span style={{ color:S.purpleL }}>$ </span><span style={{ color:"#a87fff" }}>git clone https://github.com/dailaunch-bot/dailaunch-</span></div>
               <div><span style={{ color:S.purpleL }}>$ </span><span style={{ color:"#a87fff" }}>cd dailaunch- &amp;&amp; npm install &amp;&amp; npm run build:all</span></div>
@@ -476,28 +485,23 @@ export default function DashboardClient({ initialStats, initialTokens }: Props) 
               <div style={{ color:S.green }}>✓ dailaunch v1.0.0 installed</div>
               <div>&nbsp;</div>
 
-              {/* Step 2 - GitHub Auth */}
               <div style={{ color:"#3d3d5c" }}># ── Step 2: Authenticate with GitHub ───────────────</div>
               <div><span style={{ color:S.purpleL }}>$ </span><span style={{ color:"#a87fff" }}>gh auth login</span></div>
 
               {user ? (
-                // Already logged in
                 <>
                   <div style={{ color:S.muted }}>? What account do you want to log into? <span style={{ color:S.green }}>GitHub.com</span></div>
                   <div style={{ color:S.muted }}>? How would you like to authenticate? <span style={{ color:S.green }}>Login with a web browser</span></div>
                   <div style={{ color:S.green }}>✓ Logged in as @{user.githubLogin}</div>
                   <div>&nbsp;</div>
 
-                  {/* Step 3 - Deploy */}
                   <div style={{ color:"#3d3d5c" }}># ── Step 3: Deploy your token ──────────────────────</div>
                   <div><span style={{ color:S.purpleL }}>$ </span><span style={{ color:"#a87fff" }}>dailaunch deploy</span></div>
 
-                  {/* Dynamic lines added during animation */}
                   {cliLines.map((l, i) => (
                     <div key={i} dangerouslySetInnerHTML={{ __html: l.html }} />
                   ))}
 
-                  {/* Blinking cursor when idle */}
                   {!cliRunning && !cliDone && (
                     <div>
                       <span style={{ display:"inline-block", width:8, height:13, background:S.purpleL, verticalAlign:"middle", animation:"blink 1s infinite" }} />
@@ -505,7 +509,6 @@ export default function DashboardClient({ initialStats, initialTokens }: Props) 
                   )}
                 </>
               ) : (
-                // Not logged in - show auth prompt
                 <>
                   <div style={{ color:S.muted }}>? What account do you want to log into? <span style={{ color:S.green }}>GitHub.com</span></div>
                   <div style={{ color:S.muted }}>? How would you like to authenticate? <span style={{ color:S.green }}>Login with a web browser</span></div>
@@ -528,7 +531,6 @@ export default function DashboardClient({ initialStats, initialTokens }: Props) 
                     🎉 Token Deployed!
                   </button>
                 ) : !user ? (
-                  // Not logged in → GitHub OAuth button
                   <a href="https://api.dailaunch.online/auth/github"
                     style={{ display:"flex", alignItems:"center", gap:8, padding:"9px 20px", background:"#24292e", border:"1px solid rgba(255,255,255,.15)", borderRadius:10, color:"white", fontFamily:S.sans, fontSize:13, fontWeight:700, textDecoration:"none", cursor:"pointer" }}>
                     <svg width="16" height="16" viewBox="0 0 24 24" fill="white">
@@ -537,7 +539,6 @@ export default function DashboardClient({ initialStats, initialTokens }: Props) 
                     Login with GitHub
                   </a>
                 ) : (
-                  // Logged in → deploy button
                   <button onClick={runCliDeploy} disabled={cliRunning}
                     style={{ display:"flex", alignItems:"center", gap:7, padding:"9px 20px", background:cliRunning?"rgba(106,32,240,.3)":S.purple, border:"none", borderRadius:10, color:"white", fontFamily:S.sans, fontSize:13, fontWeight:700, cursor:cliRunning?"not-allowed":"pointer", opacity:cliRunning?.7:1 }}>
                     {cliRunning ? "⏳ Deploying..." : "⚡ Run dailaunch deploy"}
