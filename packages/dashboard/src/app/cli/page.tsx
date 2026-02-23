@@ -229,8 +229,8 @@ export default function CliPage() {
         addLine("", "blank");
         setPhase("waiting_login");
         await sleep(1200);
-        // Redirect ke GitHub OAuth, dengan callback kembali ke /cli
-        window.location.href = `${API}/auth/github?redirect=${encodeURIComponent(window.location.origin + "/cli")}`;
+        // Redirect ke GitHub OAuth (backend sudah handle callback ke dashboard)
+        window.location.href = `${API}/auth/github`;
         return;
       }
 
