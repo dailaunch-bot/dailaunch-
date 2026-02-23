@@ -237,8 +237,8 @@ export default function DashboardClient({ initialStats, initialTokens }: Props) 
         {/* ── NAV ── */}
         <nav style={{ display:"flex", alignItems:"center", padding:"0 28px", height:60, borderBottom:S.border, background:"rgba(8,8,15,.85)", backdropFilter:"blur(20px)", position:"sticky", top:0, zIndex:100, gap:24 }}>
           <a href="/" style={{ display:"flex", alignItems:"center", gap:10, textDecoration:"none" }}>
-            <span style={{ fontSize:22 }}>⚡</span>
-            <span style={{ fontWeight:700, fontSize:16, color:S.text, letterSpacing:"-0.01em" }}>DaiLaunch</span>
+           <img src="/logo.png" alt="DaiLaunch" style={{ width:32, height:32, borderRadius:"50%" }} />
+<span style={{ fontWeight:700, fontSize:16, color:S.text, letterSpacing:"-0.01em" }}>DaiLaunch</span>
           </a>
           <div style={{ display:"flex", gap:4 }}>
             {([
