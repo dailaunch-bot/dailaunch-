@@ -1,0 +1,48 @@
+# 📁 GitHub Repo per Token
+
+Every successful deploy automatically creates a GitHub repository under the deployer's account with full token metadata.
+
+## What Gets Created
+
+```
+dailaunch-MAT-1234567890/
+├── token-info.json    # Full on-chain metadata (machine-readable)
+└── README.md          # Human-readable token info page
+```
+
+## token-info.json
+
+```json
+{
+  "name": "My Awesome Token",
+  "symbol": "MAT",
+  "contractAddress": "0xabc...def",
+  "creatorFeeWallet": "0x123...456",
+  "chain": "base",
+  "chainId": 8453,
+  "social": {
+    "twitter": "https://twitter.com/mytoken",
+    "website": "https://mytoken.xyz",
+    "logo": "https://mytoken.xyz/logo.png"
+  },
+  "deployedBy": "github-username",
+  "deployTxHash": "0xfed...cba",
+  "deployedAt": "2026-02-23T00:00:00.000Z",
+  "platform": "DaiLaunch",
+  "baseScan": "https://basescan.org/token/0xabc...def",
+  "dexScreener": "https://dexscreener.com/base/0xabc...def"
+}
+```
+
+## Why a GitHub Repo?
+
+| Benefit | Description |
+|---------|-------------|
+| 🔍 **Transparency** | Anyone can verify your token's origin and metadata |
+| 📌 **Permanence** | Metadata is stored on GitHub, not just a database |
+| 🤝 **Trust** | Links deployer's GitHub identity to the token on-chain |
+| 🔗 **Discoverability** | Easy to share token info with the community |
+
+{% hint style="info" %}
+The repo name follows the format: `dailaunch-{SYMBOL}-{TIMESTAMP}` — for example `dailaunch-mat-1740268800000`.
+{% endhint %}

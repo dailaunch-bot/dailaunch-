@@ -1,0 +1,37 @@
+# 🔑 exportkey
+
+Export your creator wallet private key so you can import it into MetaMask or any other EVM wallet.
+
+## Usage
+
+```bash
+dailaunch exportkey
+```
+
+## Example Output
+
+```
+⚡ DaiLaunch
+
+🔑 Export Creator Wallet
+
+  GitHub        : @yourusername
+  Wallet Address: 0x123...456
+  Private Key   : 0xabcdef1234...
+
+  ⚠️  WARNING: Never share your private key with anyone.
+  Store it securely offline.
+```
+
+{% hint style="danger" %}
+**Never share your private key.** Anyone with your private key has full control over your wallet and all funds inside it. Store it in a secure, offline location.
+{% endhint %}
+
+## Import into MetaMask
+
+1. Open MetaMask → click your account icon → **Import Account**
+2. Select **Private Key**
+3. Paste your exported private key
+4. Click **Import**
+
+Your creator wallet — and all accumulated trading fees — will now be accessible in MetaMask.

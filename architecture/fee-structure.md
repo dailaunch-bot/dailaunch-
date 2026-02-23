@@ -1,0 +1,62 @@
+# 💸 Fee Structure
+
+DaiLaunch uses **Clanker SDK v4** to configure permanent on-chain trading fee splits at deploy time.
+
+## How It Works
+
+Every time your token is swapped on a DEX on Base:
+
+```
+Every Swap
+     ↓
+[Clanker Protocol Fee] — deducted automatically by smart contract
+     ↓
+Remaining fee split (configured at deploy):
+  ┌──────────────────────────────────────────┐
+  │  90%  →  Creator Wallet (you)            │
+  │  10%  →  DaiLaunch Platform Wallet       │
+  └──────────────────────────────────────────┘
+```
+
+## Configuration in Code
+
+The fee split is set in `packages/api/src/services/clanker.ts`:
+
+```typescript
+const CREATOR_REWARD_PERCENT  = 90; // 90% → creator wallet
+const PLATFORM_REWARD_PERCENT = 10; // 10% → DaiLaunch platform
+
+rewardsConfig: {
+  creatorReward:            CREATOR_REWARD_PERCENT,
+  creatorAdmin:             creatorWallet,
+  creatorRewardRecipient:   creatorWallet,
+  interfaceAdmin:           PLATFORM_WALLET_ADDRESS,
+  interfaceRewardRecipient: PLATFORM_WALLET_ADDRESS,
+}
+```
+
+## Key Points
+
+| Property | Value |
+|----------|-------|
+| Creator share | **90%** of every swap fee |
+| Platform share | **10%** of every swap fee |
+| Fee type | Permanent — encoded on-chain at deploy time |
+| Changeable after deploy? | ❌ No — immutable by design |
+| Claim method | Fees flow directly to wallet — no manual claim needed |
+
+{% hint style="success" %}
+**Fees are permanent and trustless.** The split is encoded directly into the smart contract by Clanker SDK at the moment of deployment. Neither DaiLaunch nor anyone else can change it after the fact.
+{% endhint %}
+
+## Checking Your Fee Balance
+
+```bash
+dailaunch claim
+```
+
+Or view your creator wallet directly on BaseScan:
+
+```
+https://basescan.org/address/YOUR_CREATOR_WALLET
+```
