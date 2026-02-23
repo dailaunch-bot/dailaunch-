@@ -4,11 +4,12 @@
 
 **Token Launchpad on Base Chain**
 
-Deploy token ERC-20 ke Base blockchain dalam waktu < 2 menit — hanya butuh terminal & akun GitHub.
+Deploy an ERC-20 token to Base blockchain in under 2 minutes — all you need is a terminal and a GitHub account.
 
 [![Base Chain](https://img.shields.io/badge/Chain-Base-0052FF)](https://base.org)
 [![Powered by Clanker](https://img.shields.io/badge/Powered%20by-Clanker%20SDK%20v4-purple)](https://github.com/clanker-devco)
 [![Version](https://img.shields.io/badge/version-1.0.0-blue)](https://github.com/dailaunch-bot/dailaunch)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 
 [Website](https://dailaunch.online) · [Dashboard](https://dailaunch.online/dashboard) · [BaseScan](https://basescan.org)
 
@@ -16,25 +17,25 @@ Deploy token ERC-20 ke Base blockchain dalam waktu < 2 menit — hanya butuh ter
 
 ---
 
-## 📖 Pengenalan
+## 📖 Introduction
 
-DaiLaunch adalah **open-source token launchpad** berbasis CLI untuk Base chain. Platform ini memungkinkan developer dan kreator men-deploy token ERC-20 ke blockchain hanya dengan beberapa perintah di terminal — tanpa setup wallet yang rumit, tanpa konfigurasi teknis yang panjang.
+DaiLaunch is an **open-source token launchpad** built on Base chain with a CLI-first approach. It lets developers and creators deploy ERC-20 tokens to the blockchain in just a few commands — no wallet setup required, no complex configuration.
 
-### Cara Kerja
+### How It Works
 
 ```
 User → dailaunch deploy → GitHub Auth → Clanker SDK → Base Mainnet
-                              ↓
-                    Auto-generate Creator Wallet
-                              ↓
-                    Auto-buat GitHub Repo (metadata)
-                              ↓
-              Token live di DexScreener & BaseScan
+                               ↓
+                   Auto-generate Creator Wallet
+                               ↓
+                   Auto-create GitHub Repo (metadata)
+                               ↓
+             Token live on DexScreener & BaseScan
 ```
 
 ### Fee Structure
 
-Setiap token yang di-deploy mendapat **trading fee permanen** dari setiap swap:
+Every deployed token earns **permanent trading fees** from every swap:
 
 ```
 ┌─────────────────────────────────────────────────────────────────┐
@@ -44,23 +45,23 @@ Setiap token yang di-deploy mendapat **trading fee permanen** dari setiap swap:
 │   10% ──────────────────────→  DaiLaunch Platform Wallet        │
 └─────────────────────────────────────────────────────────────────┘
 
-* Clanker protocol fee dipotong otomatis sebelum pembagian di atas
+* Clanker protocol fee is deducted automatically before the split above
 ```
 
 ---
 
-## ✨ Fitur Utama
+## ✨ Key Features
 
-| Fitur | Deskripsi |
-|-------|-----------|
-| 🚀 **Deploy ERC-20** | Deploy token ke Base Mainnet via Clanker SDK v4 |
-| 🔐 **GitHub Auth** | Autentikasi via GitHub — tidak perlu setup wallet manual |
-| 👛 **Auto Wallet** | Creator wallet di-generate & dienkripsi AES-256 otomatis |
-| 📁 **Auto GitHub Repo** | Setiap token mendapat repo dengan `token-info.json` + README |
-| 💰 **90% Fee ke Creator** | 90% dari setiap trading fee mengalir ke creator wallet |
-| 📊 **Real-time Indexing** | Langsung muncul di DexScreener & BaseScan |
-| 🌐 **Web Dashboard** | Pantau semua token di [dailaunch.online](https://dailaunch.online) |
-| 🧪 **Testnet Mode** | Simulasi deploy tanpa transaksi nyata (`--testnet`) |
+| Feature | Description |
+|---------|-------------|
+| 🚀 **Deploy ERC-20** | Deploy tokens to Base Mainnet via Clanker SDK v4 |
+| 🔐 **GitHub Auth** | Authenticate via GitHub — no manual wallet setup needed |
+| 👛 **Auto Wallet** | Creator wallet is auto-generated and AES-256 encrypted |
+| 📁 **Auto GitHub Repo** | Every token gets a repo with `token-info.json` + README |
+| 💰 **90% Fee to Creator** | 90% of every trading fee flows directly to the creator wallet |
+| 📊 **Real-time Indexing** | Instantly appears on DexScreener & BaseScan |
+| 🌐 **Web Dashboard** | Track all tokens at [dailaunch.online](https://dailaunch.online) |
+| 🧪 **Testnet Mode** | Simulate deployment with no real transactions (`--testnet`) |
 
 ---
 
@@ -74,7 +75,7 @@ dailaunch/
 │   │   │   ├── schema.prisma       # Database schema (PostgreSQL)
 │   │   │   └── migrations/         # Prisma migrations
 │   │   └── src/
-│   │       ├── index.ts            # Entry point API server
+│   │       ├── index.ts            # API server entry point
 │   │       ├── middleware/
 │   │       │   └── auth.ts         # GitHub token verification
 │   │       ├── routes/
@@ -90,26 +91,26 @@ dailaunch/
 │   │
 │   ├── cli/                        # CLI Tool — npm package: dailaunch
 │   │   └── src/
-│   │       ├── index.ts            # Entry point CLI
+│   │       ├── index.ts            # CLI entry point
 │   │       ├── commands/
 │   │       │   ├── deploy.ts       # dailaunch deploy
 │   │       │   ├── status.ts       # dailaunch status
 │   │       │   ├── claim.ts        # dailaunch claim
 │   │       │   └── exportkey.ts    # dailaunch exportkey
 │   │       └── lib/
-│   │           ├── api.ts          # HTTP client ke API
+│   │           ├── api.ts          # HTTP client to API
 │   │           └── github.ts       # GitHub token helper
 │   │
 │   └── dashboard/                  # Web Dashboard — Next.js
 │       └── src/
 │           ├── app/
-│           │   ├── page.tsx        # Halaman utama token list
-│           │   └── token/[address] # Halaman detail token
+│           │   ├── page.tsx        # Main token list page
+│           │   └── token/[address] # Token detail page
 │           └── components/
 │               ├── DashboardClient.tsx
 │               └── TokenDetailClient.tsx
 │
-├── claim.js                        # Script claim fee creator
+├── claim.js                        # Creator fee claim script
 ├── setup.sh                        # Setup script (Linux/macOS)
 ├── railway.toml                    # Railway deployment config
 └── README.md
@@ -119,16 +120,16 @@ dailaunch/
 
 ## 🗄 Database Schema
 
-DaiLaunch menggunakan **PostgreSQL** dengan **Prisma ORM**.
+DaiLaunch uses **PostgreSQL** with **Prisma ORM**.
 
 ### Model: `User`
 
-Dibuat otomatis saat user pertama kali deploy. Wallet di-generate dan dienkripsi — user tidak perlu setup wallet manual.
+Created automatically on first deploy. Wallet is generated and encrypted — users never need to manage keys manually.
 
 ```prisma
 model User {
   id             String   @id @default(cuid())
-  githubUsername String   @unique   // Login GitHub user
+  githubUsername String   @unique   // GitHub login username
   walletAddress  String   @unique   // Creator wallet (auto-generated)
   encryptedKey   String             // Private key (AES-256 encrypted)
   createdAt      DateTime @default(now())
@@ -137,23 +138,23 @@ model User {
 
 ### Model: `Token`
 
-Setiap token yang berhasil di-deploy dicatat lengkap.
+Every successfully deployed token is fully recorded on-chain and in the database.
 
 ```prisma
 model Token {
   id              String   @id @default(cuid())
-  contractAddress String   @unique   // Alamat contract ERC-20 di Base
-  name            String             // Nama token
-  symbol          String             // Ticker (max 10 karakter)
-  deployer        String             // GitHub username deployer
-  creatorWallet   String             // Wallet penerima 90% trading fee
+  contractAddress String   @unique   // ERC-20 contract address on Base
+  name            String             // Token name
+  symbol          String             // Ticker symbol (max 10 chars)
+  deployer        String             // GitHub username of deployer
+  creatorWallet   String             // Wallet receiving 90% trading fees
   githubRepo      String   @default("")
   twitter         String?
   website         String?
-  txHash          String             // Transaction hash deploy
+  txHash          String             // Deploy transaction hash
   deployedAt      DateTime @default(now())
 
-  // Market data (diupdate oleh indexer secara real-time)
+  // Market data — updated in real-time by indexer
   tradeVolume    Float @default(0)
   price          Float @default(0)
   marketCap      Float @default(0)
@@ -170,7 +171,7 @@ model Token {
 
 ### GitHub Repo per Token — `token-info.json`
 
-Setiap deploy otomatis membuat GitHub repo dengan file berikut:
+Every deploy automatically creates a GitHub repo with the following files:
 
 ```json
 {
@@ -196,23 +197,23 @@ Setiap deploy otomatis membuat GitHub repo dengan file berikut:
 
 ---
 
-## 🚀 Instalasi & Quick Start
+## 🚀 Installation & Quick Start
 
-### Prasyarat
+### Prerequisites
 
 - **Node.js** v18+
-- **GitHub CLI** (`gh`) — untuk autentikasi
+- **GitHub CLI** (`gh`) — for authentication
 - **Git**
 
-### Step 1 — Login GitHub
+### Step 1 — Login to GitHub
 
 ```bash
 gh auth login
 ```
 
-Pilih: **GitHub.com** → **HTTPS** → **Login with a web browser**
+Select: **GitHub.com** → **HTTPS** → **Login with a web browser**
 
-### Step 2 — Clone Repository
+### Step 2 — Clone the Repository
 
 ```bash
 git clone https://github.com/dailaunch-bot/dailaunch
@@ -233,12 +234,12 @@ npm install -g .\packages\cli
 npm install && npm run build:all && npm install -g ./packages/cli
 ```
 
-**Atau gunakan setup script (Linux/macOS):**
+**Or use the setup script (Linux/macOS):**
 ```bash
 chmod +x setup.sh && ./setup.sh
 ```
 
-### Step 4 — Verifikasi Instalasi
+### Step 4 — Verify Installation
 
 ```bash
 dailaunch --version
@@ -253,25 +254,25 @@ dailaunch --help
 
 ### `dailaunch deploy`
 
-Deploy token ERC-20 baru ke Base Mainnet secara interaktif.
+Interactively deploy a new ERC-20 token to Base Mainnet.
 
 ```bash
 dailaunch deploy
 ```
 
-Akan ada prompt untuk mengisi:
-- **Token Name** — nama lengkap token
-- **Ticker Symbol** — max 10 karakter
-- **Twitter/X URL** — opsional
-- **Website URL** — opsional
-- **Logo URL** — opsional
+You will be prompted to fill in:
+- **Token Name** — full name of the token
+- **Ticker Symbol** — max 10 characters
+- **Twitter/X URL** — optional
+- **Website URL** — optional
+- **Logo URL** — optional
 
-**Mode Testnet (simulasi, tidak ada transaksi nyata):**
+**Testnet mode (simulation, no real transactions):**
 ```bash
 dailaunch deploy --testnet
 ```
 
-**Contoh output setelah deploy berhasil:**
+**Example output after a successful deploy:**
 ```
 ✅ Deployment Complete!
 
@@ -284,7 +285,7 @@ dailaunch deploy --testnet
   BaseScan      : https://basescan.org/token/0xabc...def
   DexScreener   : https://dexscreener.com/base/0xabc...def
 
-  💰 90% of all trading fees go to your creator wallet
+  💰 90% of all trading fees go to your creator wallet (10% to DaiLaunch platform)
   📊 Run: dailaunch claim — to check your fee balance
 ```
 
@@ -292,17 +293,30 @@ dailaunch deploy --testnet
 
 ### `dailaunch status`
 
-Lihat statistik platform dan token terbaru.
+View platform statistics and the latest deployed tokens.
 
 ```bash
 dailaunch status
+```
+
+```
+⚡ DaiLaunch Platform Stats
+
+  Total Tokens  : 142
+  Today         : +7 tokens
+  Total Volume  : $1.24M
+
+  Latest Tokens:
+  • DGRKT    DaiGecko Token      +42.5%
+  • BFROG    Base Frog            -8.3%
+  • GHSTR    GitHub Star         +15.7%
 ```
 
 ---
 
 ### `dailaunch claim`
 
-Cek saldo trading fee yang terkumpul di creator wallet.
+Check the accumulated trading fee balance in your creator wallet.
 
 ```bash
 dailaunch claim
@@ -312,81 +326,25 @@ dailaunch claim
 
 ### `dailaunch exportkey`
 
-Export private key creator wallet (gunakan dengan hati-hati).
+Export your creator wallet private key (use with extreme caution).
 
 ```bash
 dailaunch exportkey
 ```
 
-> ⚠️ Jangan pernah share private key ke siapapun.
+> ⚠️ **Warning:** Never share your private key with anyone.
 
 ---
 
-## 🌐 Environment Variables
+## 📄 License
 
-Buat file `packages/api/.env`:
-
-```env
-# Database
-DATABASE_URL="postgresql://user:password@host:5432/dailaunch"
-
-# Platform wallet DaiLaunch (penerima 10% trading fee)
-PLATFORM_WALLET_ADDRESS="0xYOUR_PLATFORM_WALLET"
-PLATFORM_PRIVATE_KEY="0xYOUR_PLATFORM_PRIVATE_KEY"
-
-# Base RPC
-BASE_RPC_URL="https://mainnet.base.org"
-
-# Enkripsi private key creator
-ENCRYPT_SALT="your-random-secret-salt"
-
-# CORS
-DASHBOARD_URL="https://dailaunch.online"
-
-# Port (default: 3001)
-PORT=3001
-```
+MIT License — see the [LICENSE](LICENSE) file for full details.
 
 ---
 
-## 🔌 API Endpoints
+## 🤝 Contributing
 
-| Method | Endpoint | Auth | Deskripsi |
-|--------|----------|------|-----------|
-| `GET` | `/health` | — | Health check |
-| `GET` | `/api/stats` | — | Platform statistics |
-| `GET` | `/api/tokens` | — | List token (sort, search, pagination) |
-| `GET` | `/api/tokens/:address` | — | Detail satu token |
-| `POST` | `/api/deploy` | ✅ | Deploy token baru |
-| `GET` | `/api/user/me` | ✅ | Info user & wallet |
-
-Auth menggunakan header: `x-github-token: YOUR_GITHUB_TOKEN`
-
----
-
-## 🧪 Testnet Mode
-
-Test tanpa transaksi nyata:
-
-```bash
-# Jalankan mock API (tidak perlu database)
-node mock-api-server.js
-
-# Test via CLI
-node testnet-cli.js deploy
-node testnet-cli.js status
-node testnet-cli.js tokens
-```
-
----
-
-## 🏗 Deploy ke Railway
-
-1. Fork repo ini
-2. Buka [railway.app](https://railway.app) → New Project → Deploy from GitHub
-3. Pilih repo hasil fork
-4. Set semua environment variables
-5. Railway otomatis deploy dan kasih URL publik
+Pull requests are welcome! For major changes, please open an issue first to discuss what you would like to change.
 
 ---
 
