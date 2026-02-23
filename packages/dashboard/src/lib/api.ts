@@ -17,3 +17,37 @@ export async function getToken(address: string) {
   if (!res.ok) return null;
   return res.json();
 }
+
+export async function deployToken(params: {
+  name: string;
+  symbol: string;
+  twitter?: string;
+  website?: string;
+  logoUrl?: string;
+  githubToken: string;
+}) {
+  const { githubToken, ...body } = params;
+  const res = await fetch(`${API}/api/deploy`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'x-github-token': githubToken,
+    },
+    body: JSON.stringify(body),
+  });
+  const data = await res.json();
+  if (!res.ok) throw new Error(data.error || 'Deploy failed');
+  return data;
+}
+
+export async function verifyJWT(token: string) {
+  const res = await fetch(`${API}/auth/me`, {
+    headers: { Authorization: `Bearer ${token}` },
+  });
+  if (!res.ok) return null;
+  return res.json();
+}
+
+export function getGitHubLoginUrl() {
+  return `${API}/auth/github`;
+}
