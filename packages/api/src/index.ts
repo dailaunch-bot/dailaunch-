@@ -13,7 +13,11 @@ const app = express();
 
 app.use(helmet());
 app.use(cors({
-  origin: process.env.DASHBOARD_URL || '*',
+  origin: [
+    'https://dailaunch.online',
+    'https://www.dailaunch.online',
+    process.env.DASHBOARD_URL || '',
+  ].filter(Boolean),
   methods: ['GET', 'POST'],
   allowedHeaders: ['Content-Type', 'Authorization', 'x-github-token'],
 }));
