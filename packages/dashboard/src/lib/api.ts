@@ -1,4 +1,5 @@
-const API = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
+// Hardcode API URL - NEXT_PUBLIC_ vars harus ada saat build time
+const API = process.env.NEXT_PUBLIC_API_URL || 'https://api.dailaunch.online';
 
 export async function getStats() {
   const res = await fetch(`${API}/api/stats`, { next: { revalidate: 30 } });
@@ -49,5 +50,5 @@ export async function verifyJWT(token: string) {
 }
 
 export function getGitHubLoginUrl() {
-  return `${API}/auth/github`;
+  return `https://api.dailaunch.online/auth/github`;
 }
