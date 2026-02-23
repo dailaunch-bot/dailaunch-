@@ -419,7 +419,7 @@ export default function CliPage() {
               ref={inputRef}
               value={input}
               onChange={(e) => setInput(e.target.value)}
-              disabled={phase === "deploying"}
+              disabled={false}
               autoComplete="off"
               spellCheck={false}
               style={{
