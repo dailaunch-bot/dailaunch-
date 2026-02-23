@@ -159,7 +159,7 @@ export default function DashboardClient({ initialStats, initialTokens }: Props) 
     ], 100);
 
     try {
-      const API = process.env.NEXT_PUBLIC_API_URL || "https://api.dailaunch.online";
+      const API = "https://api.dailaunch.online";
       const res = await fetch(`${API}/api/deploy`, {
         method: "POST",
         headers: {
