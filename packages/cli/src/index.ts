@@ -3,6 +3,7 @@ import { Command } from 'commander';
 import chalk from 'chalk';
 import figlet from 'figlet';
 import { deployCmd } from './commands/deploy';
+import { loginCmd }  from './commands/login';
 import { claimCmd } from './commands/claim';
 import { statusCmd } from './commands/status';
 import { exportkeyCmd } from './commands/exportkey';
@@ -19,6 +20,7 @@ program
   .description('Deploy tokens on Base chain with GitHub integration')
   .version('1.0.0');
 
+program.addCommand(loginCmd);
 program.addCommand(deployCmd);
 program.addCommand(claimCmd);
 program.addCommand(statusCmd);

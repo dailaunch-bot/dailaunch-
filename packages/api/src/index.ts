@@ -2,11 +2,13 @@ import express from 'express';
 import cors from 'cors';
 import helmet from 'helmet';
 import 'dotenv/config';
-import deployRouter from './routes/deploy';
+import deployRouter    from './routes/deploy';
+import deployWebRouter from './routes/deploy-web';
 import tokensRouter from './routes/tokens';
 import statsRouter  from './routes/stats';
 import userRouter   from './routes/user';
-import authRouter   from './routes/auth';
+import authRouter      from './routes/auth';
+import cliSessionRouter from './routes/cli-session';
 import { startIndexer } from './services/indexer';
 
 const app = express();
@@ -24,8 +26,10 @@ app.use(cors({
 app.use(express.json());
 
 // Routes
-app.use('/auth',        authRouter);
-app.use('/api/deploy',  deployRouter);
+app.use('/auth',            authRouter);
+app.use('/auth',            cliSessionRouter);
+app.use('/api/deploy/web',  deployWebRouter);
+app.use('/api/deploy',      deployRouter);
 app.use('/api/tokens',  tokensRouter);
 app.use('/api/stats',   statsRouter);
 app.use('/api/user',    userRouter);

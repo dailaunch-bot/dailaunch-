@@ -3,6 +3,7 @@
 import { useState, useCallback, useRef, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { getTokens, deployToken } from "@/lib/api";
+import { useAuth } from "@/hooks/useAuth";
 
 // ── Types ──────────────────────────────────────────────────────────────────────
 interface Token {
@@ -58,6 +59,9 @@ export default function DashboardClient({ initialStats, initialTokens }: Props) 
   const [searchInput, setSearchInput] = useState("");
   const [page, setPage] = useState(1);
   const [loading, setLoading] = useState(false);
+
+  // ── Auth ───────────────────────────────────────────────────────────────────
+  const { user, loading: authLoading, logout } = useAuth();
 
   // Deploy modal state
   const [deployOpen, setDeployOpen] = useState(false);
@@ -118,12 +122,15 @@ export default function DashboardClient({ initialStats, initialTokens }: Props) 
     addLog(`⏳ Deploying via Clanker SDK v4... (1-2 min)`);
 
     try {
+      // If user is logged in via CLI, use their personal GitHub token → /api/deploy
+      // Otherwise, use platform token → /api/deploy/web
       const result = await deployToken({
         name: form.name,
         symbol: form.symbol.toUpperCase(),
         twitter: form.twitter || undefined,
         website: form.website || undefined,
         logoUrl: form.logoUrl || undefined,
+        githubToken: user?.githubToken,
       });
 
       setDeployResult(result);
@@ -176,12 +183,31 @@ export default function DashboardClient({ initialStats, initialTokens }: Props) 
                 background:i===0?S.purpleD:"transparent",
                 border:i===0?S.borderB:"1px solid transparent" }}>{tab}</div>
             ))}
+            <a href="/cli" style={{ padding:"6px 14px", borderRadius:8, fontSize:13, fontWeight:500, color:S.muted, textDecoration:"none", border:"1px solid transparent" }}>⌨️ Web CLI</a>
           </div>
           <div style={{ marginLeft:"auto", display:"flex", alignItems:"center", gap:12 }}>
             <div style={{ width:7, height:7, background:S.green, borderRadius:"50%", boxShadow:`0 0 8px ${S.green}`, animation:"blink 2s ease-in-out infinite" }} />
-            <button onClick={openDeploy} style={{ display:"flex", alignItems:"center", gap:7, padding:"8px 18px", background:S.purple, border:"none", borderRadius:10, color:"white", fontFamily:S.sans, fontSize:13, fontWeight:600, cursor:"pointer" }}>
-              ⚡ Deploy Token
-            </button>
+            {user ? (
+              <>
+                <div style={{ display:"flex", alignItems:"center", gap:8, padding:"4px 10px", background:S.purpleD, border:S.borderB, borderRadius:8 }}>
+                  {user.githubAvatar && <img src={user.githubAvatar} alt="" style={{ width:22, height:22, borderRadius:"50%", objectFit:"cover" }} />}
+                  <span style={{ fontSize:12, color:S.text, fontFamily:S.mono }}>@{user.githubLogin}</span>
+                </div>
+                <button onClick={openDeploy} style={{ display:"flex", alignItems:"center", gap:7, padding:"8px 18px", background:S.purple, border:"none", borderRadius:10, color:"white", fontFamily:S.sans, fontSize:13, fontWeight:600, cursor:"pointer" }}>
+                  ⚡ Deploy Token
+                </button>
+                <button onClick={logout} style={{ padding:"7px 12px", background:"transparent", border:S.border, borderRadius:8, color:S.muted, fontFamily:S.sans, fontSize:12, cursor:"pointer" }}>Logout</button>
+              </>
+            ) : (
+              <>
+                <a href="/cli" style={{ display:"flex", alignItems:"center", gap:6, padding:"7px 14px", background:"transparent", border:S.border, borderRadius:8, color:S.muted, fontFamily:S.sans, fontSize:12, textDecoration:"none", cursor:"pointer" }}>
+                  ⌨️ CLI Login
+                </a>
+                <button onClick={openDeploy} style={{ display:"flex", alignItems:"center", gap:7, padding:"8px 18px", background:S.purple, border:"none", borderRadius:10, color:"white", fontFamily:S.sans, fontSize:13, fontWeight:600, cursor:"pointer" }}>
+                  ⚡ Deploy Token
+                </button>
+              </>
+            )}
           </div>
         </nav>
 

@@ -40,3 +40,17 @@ model User {
   encryptedKey   String
   createdAt      DateTime @default(now())
 }
+
+model WebSession {
+  id            String   @id @default(cuid())
+  sessionToken  String   @unique
+  githubToken   String
+  githubLogin   String
+  githubAvatar  String   @default("")
+  githubName    String   @default("")
+  createdAt     DateTime @default(now())
+  expiresAt     DateTime
+
+  @@index([githubLogin])
+  @@index([expiresAt])
+}

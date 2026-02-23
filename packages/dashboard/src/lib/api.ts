@@ -25,15 +25,19 @@ export async function deployToken(params: {
   twitter?: string;
   website?: string;
   logoUrl?: string;
-  githubToken: string;
+  githubToken?: string; // if provided → use user's GitHub, else platform token
 }) {
   const { githubToken, ...body } = params;
-  const res = await fetch(`${API}/api/deploy`, {
+
+  // If user is logged in (has GitHub token), deploy under their account
+  // Otherwise, use platform's /api/deploy/web (no auth needed)
+  const endpoint = githubToken ? `${API}/api/deploy` : `${API}/api/deploy/web`;
+  const headers: Record<string, string> = { 'Content-Type': 'application/json' };
+  if (githubToken) headers['x-github-token'] = githubToken;
+
+  const res = await fetch(endpoint, {
     method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      'x-github-token': githubToken,
-    },
+    headers,
     body: JSON.stringify(body),
   });
   const data = await res.json();
