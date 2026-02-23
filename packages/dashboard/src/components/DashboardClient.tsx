@@ -241,11 +241,19 @@ export default function DashboardClient({ initialStats, initialTokens }: Props) 
             <span style={{ fontWeight:700, fontSize:16, color:S.text, letterSpacing:"-0.01em" }}>DaiLaunch</span>
           </a>
           <div style={{ display:"flex", gap:4 }}>
-            {["Dashboard","Tokens","Docs"].map((tab,i)=>(
-              <div key={tab} style={{ padding:"6px 14px", borderRadius:8, fontSize:13, fontWeight:500,
-                color:i===0?S.text:S.muted, cursor:"pointer",
-                background:i===0?S.purpleD:"transparent",
-                border:i===0?S.borderB:"1px solid transparent" }}>{tab}</div>
+            {([
+              { label:"Dashboard", href:"/" },
+              { label:"Tokens",    href:"#tokens" },
+              { label:"Docs",      href:"https://github.com/dailaunch-bot/dailaunch-", target:"_blank" },
+            ] as Array<{ label:string; href:string; target?:string }>).map((tab, i)=>(
+              <a key={tab.label} href={tab.href} target={tab.target}
+                style={{ padding:"6px 14px", borderRadius:8, fontSize:13, fontWeight:500,
+                  color:i===0?S.text:S.muted, cursor:"pointer", textDecoration:"none",
+                  background:i===0?S.purpleD:"transparent",
+                  border:i===0?S.borderB:"1px solid transparent",
+                  display:"inline-block" }}>
+                {tab.label}
+              </a>
             ))}
             <a href="/cli" style={{ padding:"6px 14px", borderRadius:8, fontSize:13, fontWeight:500, color:S.muted, textDecoration:"none", border:"1px solid transparent" }}>⌨️ Web CLI</a>
           </div>
@@ -325,7 +333,7 @@ export default function DashboardClient({ initialStats, initialTokens }: Props) 
         <div style={{ display:"grid", gridTemplateColumns:"1fr 300px", flex:1 }}>
 
           {/* LEFT */}
-          <div style={{ padding:"24px 28px", borderRight:S.border }}>
+          <div id="tokens" style={{ padding:"24px 28px", borderRight:S.border }}>
             {/* Search + Sort */}
             <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", marginBottom:20, flexWrap:"wrap", gap:12 }}>
               <form onSubmit={(e)=>{ e.preventDefault(); setSearch(searchInput); setPage(1); fetchTokens(1,sort,searchInput); }} style={{ display:"flex", gap:8 }}>
