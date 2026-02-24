@@ -81,6 +81,84 @@ export default function DashboardClient({ initialStats, initialTokens }: Props) 
   const [showForm, setShowForm] = useState(false);
   const [logoUrl, setLogoUrl] = useState("");
 
+  // ── User dropdown state ────────────────────────────────────────────────────
+  const [dropdownOpen, setDropdownOpen] = useState(false);
+  const [walletInfo, setWalletInfo] = useState<{ walletAddress:string; balance:string; balanceUsd:string; totalTokens:number; tokens:Array<{name:string;symbol:string;contractAddress:string}> } | null>(null);
+  const [walletLoading, setWalletLoading] = useState(false);
+  const [privateKey, setPrivateKey] = useState("");
+  const [pkLoading, setPkLoading] = useState(false);
+  const [pkVisible, setPkVisible] = useState(false);
+  const [pkError, setPkError] = useState("");
+  const dropdownRef = useRef<HTMLDivElement>(null);
+
+  // Close dropdown on outside click
+  useEffect(() => {
+    const handler = (e: MouseEvent) => {
+      if (dropdownRef.current && !dropdownRef.current.contains(e.target as Node)) {
+        setDropdownOpen(false);
+        setPkVisible(false);
+        setPrivateKey("");
+        setPkError("");
+      }
+    };
+    document.addEventListener("mousedown", handler);
+    return () => document.removeEventListener("mousedown", handler);
+  }, []);
+
+  const fetchWalletInfo = async () => {
+    if (!user || walletInfo || walletLoading) return;
+    setWalletLoading(true);
+    try {
+      const API = "https://api.dailaunch.online";
+      const res = await fetch(`${API}/api/user/me`, {
+        headers: { "x-github-token": user.githubToken },
+      });
+      if (!res.ok) throw new Error("Failed");
+      const data = await res.json();
+      setWalletInfo({
+        walletAddress: data.walletAddress,
+        balance: data.balance ?? "0.000000",
+        balanceUsd: data.balanceUsd ?? "0.00",
+        totalTokens: data.totalTokens ?? 0,
+        tokens: data.tokens ?? [],
+      });
+    } catch {
+      setWalletInfo({ walletAddress: "—", balance: "0.000000", balanceUsd: "0.00", totalTokens: 0, tokens: [] });
+    } finally {
+      setWalletLoading(false);
+    }
+  };
+
+  const fetchPrivateKey = async () => {
+    if (!user || pkLoading) return;
+    setPkLoading(true);
+    setPkError("");
+    try {
+      const API = "https://api.dailaunch.online";
+      const res = await fetch(`${API}/api/user/privatekey`, {
+        headers: { "x-github-token": user.githubToken },
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || "Failed");
+      setPrivateKey(data.privateKey);
+      setPkVisible(true);
+    } catch (e: any) {
+      setPkError(e.message);
+    } finally {
+      setPkLoading(false);
+    }
+  };
+
+  const handleDropdownOpen = () => {
+    setDropdownOpen(v => {
+      if (!v) fetchWalletInfo();
+      return !v;
+    });
+    setPkVisible(false);
+    setPrivateKey("");
+    setPkError("");
+  };
+
   // Sync cliStep with auth state when modal is open
   useEffect(() => {
     if (cliModalOpen) {
@@ -268,13 +346,119 @@ export default function DashboardClient({ initialStats, initialTokens }: Props) 
           <div style={{ marginLeft:"auto", display:"flex", alignItems:"center", gap:12 }}>
             <div style={{ width:7, height:7, background:S.green, borderRadius:"50%", boxShadow:`0 0 8px ${S.green}`, animation:"blink 2s ease-in-out infinite" }} />
             {user ? (
-              <>
-                <div style={{ display:"flex", alignItems:"center", gap:8, padding:"4px 10px", background:S.purpleD, border:S.borderB, borderRadius:8 }}>
-                  {user.githubAvatar && <img src={user.githubAvatar} alt="" style={{ width:22, height:22, borderRadius:"50%", objectFit:"cover" }} />}
+              <div ref={dropdownRef} style={{ position:"relative" }}>
+                {/* Trigger button */}
+                <button
+                  onClick={handleDropdownOpen}
+                  style={{ display:"flex", alignItems:"center", gap:8, padding:"5px 12px 5px 6px", background:S.purpleD, border:dropdownOpen?S.borderB:S.border, borderRadius:9, cursor:"pointer", transition:"all .15s" }}
+                >
+                  {user.githubAvatar && <img src={user.githubAvatar} alt="" style={{ width:24, height:24, borderRadius:"50%", objectFit:"cover" }} />}
                   <span style={{ fontSize:12, color:S.text, fontFamily:S.mono }}>@{user.githubLogin}</span>
-                </div>
-                <button onClick={logout} style={{ padding:"7px 12px", background:"transparent", border:S.border, borderRadius:8, color:S.muted, fontFamily:S.sans, fontSize:12, cursor:"pointer" }}>Logout</button>
-              </>
+                  <span style={{ fontSize:9, color:S.muted, marginLeft:2, transition:"transform .2s", display:"inline-block", transform:dropdownOpen?"rotate(180deg)":"rotate(0deg)" }}>▼</span>
+                </button>
+
+                {/* Dropdown panel */}
+                {dropdownOpen && (
+                  <div style={{
+                    position:"absolute", top:"calc(100% + 8px)", right:0, width:300,
+                    background:"#0e0e1f", border:"1px solid rgba(106,32,240,0.3)",
+                    borderRadius:12, boxShadow:"0 20px 60px rgba(0,0,0,0.6), 0 0 0 1px rgba(106,32,240,0.1)",
+                    zIndex:999, overflow:"hidden",
+                    animation:"dropIn .15s cubic-bezier(0.16,1,0.3,1)"
+                  }}>
+                    {/* Header */}
+                    <div style={{ padding:"14px 16px", borderBottom:"1px solid rgba(255,255,255,0.06)", display:"flex", alignItems:"center", gap:10 }}>
+                      {user.githubAvatar && <img src={user.githubAvatar} alt="" style={{ width:36, height:36, borderRadius:"50%", border:"2px solid rgba(106,32,240,0.4)" }} />}
+                      <div>
+                        <div style={{ fontSize:13, fontWeight:600, color:S.text, fontFamily:S.mono }}>@{user.githubLogin}</div>
+                        <div style={{ fontSize:10, color:S.muted, marginTop:2 }}>Base Mainnet · Creator</div>
+                      </div>
+                    </div>
+
+                    {/* Fee / Wallet Info */}
+                    <div style={{ padding:"12px 16px", borderBottom:"1px solid rgba(255,255,255,0.06)" }}>
+                      <div style={{ fontSize:10, color:S.dim, fontFamily:S.mono, textTransform:"uppercase", letterSpacing:"0.08em", marginBottom:10 }}>💰 Creator Fee Wallet</div>
+                      {walletLoading ? (
+                        <div style={{ fontSize:12, color:S.muted, fontFamily:S.mono }}>⏳ Loading wallet info...</div>
+                      ) : walletInfo ? (
+                        <>
+                          {/* Balance */}
+                          <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:8 }}>
+                            <div>
+                              <div style={{ fontSize:18, fontWeight:700, color:S.green, fontFamily:S.mono }}>{walletInfo.balance} ETH</div>
+                              <div style={{ fontSize:11, color:S.muted, marginTop:1 }}>≈ ${walletInfo.balanceUsd} USD</div>
+                            </div>
+                            <div style={{ textAlign:"right" }}>
+                              <div style={{ fontSize:12, color:S.purpleL, fontFamily:S.mono }}>{walletInfo.totalTokens}</div>
+                              <div style={{ fontSize:10, color:S.muted }}>tokens deployed</div>
+                            </div>
+                          </div>
+                          {/* Wallet address */}
+                          <div style={{ fontSize:10, color:S.muted, fontFamily:S.mono, background:"rgba(255,255,255,0.03)", border:"1px solid rgba(255,255,255,0.07)", borderRadius:6, padding:"6px 8px", wordBreak:"break-all", marginBottom:6 }}>
+                            {walletInfo.walletAddress !== "—" ? walletInfo.walletAddress : "Deploy a token first"}
+                          </div>
+                          {walletInfo.walletAddress !== "—" && (
+                            <a href={`https://basescan.org/address/${walletInfo.walletAddress}`} target="_blank" rel="noopener noreferrer"
+                              style={{ fontSize:10, color:S.purpleL, fontFamily:S.mono, textDecoration:"none" }}>
+                              🔍 View on BaseScan ↗
+                            </a>
+                          )}
+                          <div style={{ fontSize:10, color:S.dim, marginTop:6, fontFamily:S.mono }}>90% of all trades → this wallet</div>
+                        </>
+                      ) : (
+                        <div style={{ fontSize:12, color:S.muted, fontFamily:S.mono }}>Deploy a token to generate your wallet</div>
+                      )}
+                    </div>
+
+                    {/* Export Private Key */}
+                    <div style={{ padding:"12px 16px", borderBottom:"1px solid rgba(255,255,255,0.06)" }}>
+                      <div style={{ fontSize:10, color:S.dim, fontFamily:S.mono, textTransform:"uppercase", letterSpacing:"0.08em", marginBottom:8 }}>🔑 Export Private Key</div>
+                      {!pkVisible ? (
+                        <>
+                          <div style={{ fontSize:11, color:S.muted, marginBottom:8, lineHeight:1.5 }}>Import your creator wallet to MetaMask to withdraw fees anytime.</div>
+                          <button onClick={fetchPrivateKey} disabled={pkLoading}
+                            style={{ width:"100%", padding:"8px", background:"rgba(255,68,102,0.08)", border:"1px solid rgba(255,68,102,0.25)", borderRadius:7, color:"#ff4466", fontFamily:S.mono, fontSize:12, cursor:pkLoading?"not-allowed":"pointer", transition:"all .15s" }}
+                            onMouseEnter={e=>(e.currentTarget.style.background="rgba(255,68,102,0.15)")}
+                            onMouseLeave={e=>(e.currentTarget.style.background="rgba(255,68,102,0.08)")}>
+                            {pkLoading ? "⏳ Fetching..." : "⚠️ Reveal Private Key"}
+                          </button>
+                          {pkError && <div style={{ fontSize:11, color:"#ff4466", marginTop:6, fontFamily:S.mono }}>❌ {pkError}</div>}
+                        </>
+                      ) : (
+                        <>
+                          <div style={{ fontSize:11, color:"#ff4466", fontWeight:600, marginBottom:6 }}>⚠️ NEVER share this key with anyone!</div>
+                          <div style={{ fontSize:10, color:S.green, fontFamily:S.mono, background:"rgba(0,229,160,0.05)", border:"1px solid rgba(0,229,160,0.15)", borderRadius:6, padding:"8px", wordBreak:"break-all", marginBottom:8, userSelect:"all" }}>
+                            {privateKey}
+                          </div>
+                          <div style={{ display:"flex", gap:6 }}>
+                            <button onClick={()=>navigator.clipboard.writeText(privateKey)}
+                              style={{ flex:1, padding:"6px", background:"rgba(0,229,160,0.08)", border:"1px solid rgba(0,229,160,0.2)", borderRadius:6, color:S.green, fontFamily:S.mono, fontSize:11, cursor:"pointer" }}>
+                              📋 Copy
+                            </button>
+                            <button onClick={()=>{ setPkVisible(false); setPrivateKey(""); }}
+                              style={{ flex:1, padding:"6px", background:"rgba(255,255,255,0.04)", border:S.border, borderRadius:6, color:S.muted, fontFamily:S.mono, fontSize:11, cursor:"pointer" }}>
+                              🙈 Hide
+                            </button>
+                          </div>
+                          <div style={{ fontSize:10, color:S.dim, marginTop:8, lineHeight:1.5 }}>
+                            Import to MetaMask: Account icon → Import Account → Paste key → Switch to Base Mainnet
+                          </div>
+                        </>
+                      )}
+                    </div>
+
+                    {/* Logout */}
+                    <div style={{ padding:"8px 10px" }}>
+                      <button onClick={()=>{ setDropdownOpen(false); logout(); }}
+                        style={{ width:"100%", padding:"8px", background:"transparent", border:"none", borderRadius:7, color:S.muted, fontFamily:S.sans, fontSize:12, cursor:"pointer", textAlign:"left", transition:"all .15s" }}
+                        onMouseEnter={e=>{ e.currentTarget.style.background="rgba(255,255,255,0.04)"; e.currentTarget.style.color=S.text; }}
+                        onMouseLeave={e=>{ e.currentTarget.style.background="transparent"; e.currentTarget.style.color=S.muted; }}>
+                        🚪 Logout
+                      </button>
+                    </div>
+                  </div>
+                )}
+              </div>
             ) : (
               <>
                 <button onClick={openDeploy} style={{ display:"flex", alignItems:"center", gap:7, padding:"8px 18px", background:S.purple, border:"none", borderRadius:10, color:"white", fontFamily:S.sans, fontSize:13, fontWeight:600, cursor:"pointer" }}>
