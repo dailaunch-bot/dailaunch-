@@ -79,6 +79,7 @@ export default function DashboardClient({ initialStats, initialTokens }: Props) 
   const [tokenForm, setTokenForm] = useState({ name:"", symbol:"", twitter:"", website:"" });
   const [tokenFormError, setTokenFormError] = useState("");
   const [showForm, setShowForm] = useState(false);
+  const [logoUrl, setLogoUrl] = useState("");
 
   // Sync cliStep with auth state when modal is open
   useEffect(() => {
@@ -106,7 +107,8 @@ export default function DashboardClient({ initialStats, initialTokens }: Props) 
     setCliLines([]);
     setTokenForm({ name:"", symbol:"", twitter:"", website:"" });
     setTokenFormError("");
-    setShowForm(true); // tampilkan form input dulu
+    setShowForm(true);
+    setLogoUrl("");
   };
 
   const cliSleep = (ms: number) => new Promise(r => setTimeout(r, ms));
@@ -146,6 +148,11 @@ export default function DashboardClient({ initialStats, initialTokens }: Props) 
     await appendLines([
       `<div style="color:${clr.muted}">? Symbol (max 10 chars): <span style="color:${clr.green}">${tokenForm.symbol.toUpperCase()}</span></div>`,
     ], 300);
+    if (logoUrl) {
+      await appendLines([
+        `<div style="color:${clr.muted}">? Logo URL: <span style="color:${clr.green}">${logoUrl}</span></div>`,
+      ], 200);
+    }
     if (tokenForm.twitter) {
       await appendLines([
         `<div style="color:${clr.muted}">? Twitter/X URL: <span style="color:${clr.green}">${tokenForm.twitter}</span></div>`,
@@ -184,6 +191,7 @@ export default function DashboardClient({ initialStats, initialTokens }: Props) 
           symbol: tokenForm.symbol.trim().toUpperCase(),
           twitter: tokenForm.twitter.trim() || undefined,
           website: tokenForm.website.trim() || undefined,
+          logoUrl: logoUrl.trim() || undefined,
         }),
       });
 
@@ -572,7 +580,7 @@ export default function DashboardClient({ initialStats, initialTokens }: Props) 
                         />
                       </div>
                       {/* Website */}
-                      <div style={{ marginBottom:tokenFormError ? 10 : 0 }}>
+                      <div style={{ marginBottom:10 }}>
                         <div style={{ fontSize:11, color:S.dim, fontFamily:S.mono, marginBottom:4 }}>
                           <span style={{ color:S.purpleL }}>?</span> Website URL <span style={{ color:S.muted, fontSize:10 }}>(optional)</span>
                         </div>
@@ -583,6 +591,30 @@ export default function DashboardClient({ initialStats, initialTokens }: Props) 
                           onChange={e => setTokenForm(f => ({ ...f, website: e.target.value }))}
                           style={{ width:"100%", padding:"8px 12px", background:"rgba(255,255,255,0.05)", border:"1px solid rgba(120,60,255,0.2)", borderRadius:7, color:S.text, fontSize:13, outline:"none", fontFamily:S.mono }}
                         />
+                      </div>
+                      {/* Logo URL */}
+                      <div style={{ marginBottom:tokenFormError ? 10 : 0 }}>
+                        <div style={{ fontSize:11, color:S.dim, fontFamily:S.mono, marginBottom:4 }}>
+                          <span style={{ color:S.purpleL }}>?</span> Logo URL <span style={{ color:S.muted, fontSize:10 }}>(optional)</span>
+                        </div>
+                        <input
+                          type="text"
+                          placeholder="https://yourtoken.xyz/logo.png"
+                          value={logoUrl}
+                          onChange={e => setLogoUrl(e.target.value)}
+                          style={{ width:"100%", padding:"8px 12px", background:"rgba(255,255,255,0.05)", border:"1px solid rgba(120,60,255,0.2)", borderRadius:7, color:S.text, fontSize:13, outline:"none", fontFamily:S.mono }}
+                        />
+                        {logoUrl && (
+                          <div style={{ marginTop:6, display:"flex", alignItems:"center", gap:8 }}>
+                            <img
+                              src={logoUrl}
+                              alt="logo preview"
+                              onError={e => (e.currentTarget.style.display = "none")}
+                              onLoad={e => (e.currentTarget.style.display = "block")}
+                              style={{ display:"none", width:32, height:32, borderRadius:6, objectFit:"cover", border:"1px solid rgba(168,127,255,0.4)" }}
+                            />
+                          </div>
+                        )}
                       </div>
                       {/* Error */}
                       {tokenFormError && (
