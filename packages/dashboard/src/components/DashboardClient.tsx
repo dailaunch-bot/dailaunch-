@@ -627,25 +627,55 @@ export default function DashboardClient({ initialStats, initialTokens }: Props) 
               </button>
             </div>
 
-            <div style={{ padding:20, flex:1 }}>
-              <div style={{ fontSize:11, fontFamily:S.mono, color:S.dim, textTransform:"uppercase", letterSpacing:"0.1em", marginBottom:12 }}>CLI Preview</div>
-              <div style={{ background:"#060610", border:S.border, borderRadius:12, overflow:"hidden" }}>
-                <div style={{ display:"flex", alignItems:"center", gap:6, padding:"10px 14px", borderBottom:S.border }}>
-                  {["#ff5f57","#febc2e","#28c840"].map((col,i)=>(
-                    <div key={i} style={{ width:10, height:10, borderRadius:"50%", background:col }} />
-                  ))}
-                  <span style={{ fontFamily:S.mono, fontSize:10, color:S.dim, marginLeft:8 }}>DAILAUNCH CLI</span>
-                </div>
-                <div style={{ padding:14, fontFamily:S.mono, fontSize:12, lineHeight:1.7 }}>
-                  <div><span style={{ color:S.purpleL }}>$ </span><span style={{ color:"#a87fff" }}>gh auth login</span></div>
-                  <div style={{ color:S.green }}>✓ Logged in as @you</div>
-                  <div style={{ marginTop:6 }}><span style={{ color:S.purpleL }}>$ </span><span style={{ color:"#a87fff" }}>dailaunch deploy</span></div>
-                  <div style={{ color:S.muted }}>? Token Name: <span style={{ color:S.green }}>MyToken</span></div>
-                  <div style={{ color:S.green, marginTop:4 }}>✅ Token live on Base!</div>
-                  <div style={{ color:S.muted, fontSize:11 }}>Contract: <span style={{ color:"#a87fff" }}>0xabc...def</span></div>
-                  <div style={{ marginTop:6 }}><span style={{ color:S.purpleL }}>$ </span><span style={{ display:"inline-block", width:2, height:13, background:S.purpleL, verticalAlign:"middle", animation:"blink 1s infinite" }} /></div>
-                </div>
+            <div style={{ padding:20, flex:1, overflowY:"auto" }}>
+              <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", marginBottom:12 }}>
+                <div style={{ fontSize:11, fontFamily:S.mono, color:S.dim, textTransform:"uppercase", letterSpacing:"0.1em" }}>🕐 Recent Launches</div>
+                <div style={{ width:6, height:6, borderRadius:"50%", background:S.green, boxShadow:`0 0 6px ${S.green}`, animation:"blink 2s ease-in-out infinite" }} />
               </div>
+              {tokens.length === 0 ? (
+                <div style={{ textAlign:"center", padding:"32px 0" }}>
+                  <div style={{ fontSize:24, marginBottom:8 }}>🚀</div>
+                  <div style={{ fontSize:12, color:S.muted, fontFamily:S.mono }}>No tokens yet.</div>
+                  <div style={{ fontSize:11, color:S.dim, fontFamily:S.mono, marginTop:4 }}>Be the first to launch!</div>
+                </div>
+              ) : (
+                <div style={{ display:"flex", flexDirection:"column", gap:8 }}>
+                  {tokens.slice(0, 8).map((token) => {
+                    const ch = token.priceChange24h ?? 0;
+                    const isUp = ch >= 0;
+                    return (
+                      <a
+                        key={token.id}
+                        href={`/token/${token.contractAddress}`}
+                        style={{ display:"flex", alignItems:"center", gap:10, padding:"10px 12px", background:"rgba(255,255,255,0.02)", border:S.border, borderRadius:10, textDecoration:"none", transition:"all .15s" }}
+                        onMouseEnter={e=>{ e.currentTarget.style.background="rgba(106,32,240,0.08)"; e.currentTarget.style.borderColor="rgba(106,32,240,0.35)"; }}
+                        onMouseLeave={e=>{ e.currentTarget.style.background="rgba(255,255,255,0.02)"; e.currentTarget.style.borderColor="var(--border)"; }}
+                      >
+                        {/* Avatar */}
+                        <div style={{ width:34, height:34, borderRadius:"50%", background:avatarBg(token.contractAddress), display:"flex", alignItems:"center", justifyContent:"center", fontSize:12, fontWeight:700, color:"white", flexShrink:0 }}>
+                          {(token.symbol ?? "?")[0]}
+                        </div>
+                        {/* Info */}
+                        <div style={{ flex:1, minWidth:0 }}>
+                          <div style={{ fontSize:13, fontWeight:600, color:S.text, whiteSpace:"nowrap", overflow:"hidden", textOverflow:"ellipsis" }}>{token.name}</div>
+                          <div style={{ fontSize:10, color:S.muted, fontFamily:S.mono, marginTop:1 }}>
+                            {token.symbol} · {timeAgo(token.deployedAt)} ago
+                          </div>
+                        </div>
+                        {/* Price change */}
+                        <div style={{ textAlign:"right", flexShrink:0 }}>
+                          <div style={{ fontSize:11, fontFamily:S.mono, fontWeight:700, color:isUp?S.green:S.red, background:isUp?"rgba(0,229,160,0.1)":"rgba(255,68,102,0.1)", padding:"2px 6px", borderRadius:4 }}>
+                            {isUp?"+":""}{ch.toFixed(1)}%
+                          </div>
+                          <div style={{ fontSize:10, color:S.dim, fontFamily:S.mono, marginTop:3 }}>
+                            {token.marketCap > 0 ? fmt(token.marketCap) : "—"}
+                          </div>
+                        </div>
+                      </a>
+                    );
+                  })}
+                </div>
+              )}
             </div>
           </div>
         </div>
