@@ -39,14 +39,17 @@ Every deployed token earns **permanent trading fees** from every swap:
 
 ```
 ┌─────────────────────────────────────────────────────────────────┐
-│                    Trading Fee per Swap                         │
+│                    Total LP Fee per Swap (100%)                 │
+├─────────────────────────────────────────────────────────────────┤
+│   20% ──────────────────────→  Clanker Protocol (automatic)     │
 │                                                                 │
-│   90% ──────────────────────→  Creator Wallet (deployer)        │
+│   Remaining 80% split:                                          │
+│   70% ──────────────────────→  Creator Wallet (deployer)        │
 │   10% ──────────────────────→  DaiLaunch Platform Wallet        │
 └─────────────────────────────────────────────────────────────────┘
-
-* Clanker protocol fee is deducted automatically before the split above
 ```
+
+> **Note:** The 20% Clanker protocol fee is deducted automatically on-chain and cannot be changed. The remaining 80% is split between the creator (70%) and DaiLaunch platform (10%) — encoded permanently in the smart contract at deploy time.
 
 ---
 
@@ -58,7 +61,7 @@ Every deployed token earns **permanent trading fees** from every swap:
 | 🔐 **GitHub Auth** | Authenticate via GitHub — no manual wallet setup needed |
 | 👛 **Auto Wallet** | Creator wallet is auto-generated and AES-256 encrypted |
 | 📁 **Auto GitHub Repo** | Every token gets a repo with `token-info.json` + README |
-| 💰 **90% Fee to Creator** | 90% of every trading fee flows directly to the creator wallet |
+| 💰 **70% Fee to Creator** | 70% of every trading fee flows directly to the creator wallet (20% Clanker, 10% DaiLaunch) |
 | 📊 **Real-time Indexing** | Instantly appears on DexScreener & BaseScan |
 | 🌐 **Web Dashboard** | Track all tokens at [dailaunch.online](https://dailaunch.online) |
 | 🧪 **Testnet Mode** | Simulate deployment with no real transactions (`--testnet`) |
@@ -285,7 +288,7 @@ dailaunch deploy --testnet
   BaseScan      : https://basescan.org/token/0xabc...def
   DexScreener   : https://dexscreener.com/base/0xabc...def
 
-  💰 90% of all trading fees go to your creator wallet (10% to DaiLaunch platform)
+  💰 70% of all trading fees go to your creator wallet (10% DaiLaunch, 20% Clanker protocol)
   📊 Run: dailaunch claim — to check your fee balance
 ```
 
