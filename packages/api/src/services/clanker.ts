@@ -3,8 +3,8 @@ import { createWalletClient, createPublicClient, http } from 'viem';
 import { privateKeyToAccount } from 'viem/accounts';
 import { base } from 'viem/chains';
 
-const CREATOR_BPS  = 9_000; // 90%
-const PLATFORM_BPS = 1_000; // 10%
+const CREATOR_BPS  = 7_500; // 75% of 80% remaining = 60% of total swap fee
+const PLATFORM_BPS = 2_500; // 25% of 80% remaining = 20% of total swap fee
 
 const account = privateKeyToAccount(
   process.env.PLATFORM_PRIVATE_KEY as `0x${string}`
