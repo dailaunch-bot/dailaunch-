@@ -376,7 +376,10 @@ export default function DashboardClient({ initialStats, initialTokens }: Props) 
         `<div style="color:${clr.muted}">  GitHub   : <span style="color:${clr.purple}">${data.githubRepo}</span></div>`,
         `<div style="color:${clr.muted}">  TX       : <span style="color:${clr.purple}">${data.txHash}</span></div>`,
         `<div>&nbsp;</div>`,
-        `<div style="color:${clr.green}">  💰 90% of all trading fees → your wallet. Forever.</div>`,
+        `<div style="color:${clr.green}">  💰 Fee Split (per swap):</div>`,
+        `<div style="color:${clr.muted}">  70% ──→ <span style="color:${clr.green}">Your Creator Wallet</span></div>`,
+        `<div style="color:${clr.muted}">  10% ──→ <span style="color:${clr.purple}">DaiLaunch Platform</span></div>`,
+        `<div style="color:${clr.muted}">  20% ──→ <span style="color:#64748b">Clanker Protocol</span></div>`,
         `<div>&nbsp;</div>`,
         `<div style="color:${clr.purple}">$ <span style="display:inline-block;width:8px;height:13px;background:${clr.purple};vertical-align:middle;animation:blink 1s infinite"></span></div>`,
       ], 80);
@@ -492,7 +495,7 @@ export default function DashboardClient({ initialStats, initialTokens }: Props) 
                               🔍 View on BaseScan ↗
                             </a>
                           )}
-                          <div style={{ fontSize:10, color:S.dim, marginTop:6, fontFamily:S.mono }}>90% of all trades → this wallet</div>
+                          <div style={{ fontSize:10, color:S.dim, marginTop:6, fontFamily:S.mono }}>70% of all trades → this wallet</div>
                         </>
                       ) : (
                         <div style={{ fontSize:12, color:S.muted, fontFamily:S.mono }}>Deploy a token to generate your wallet</div>
@@ -701,7 +704,7 @@ export default function DashboardClient({ initialStats, initialTokens }: Props) 
                 { num:"01", title:"Install CLI", desc:"npm install -g @dailaunch/cli" },
                 { num:"02", title:"GitHub Auth", desc:"gh auth login" },
                 { num:"03", title:"Deploy Token", desc:"dailaunch deploy" },
-                { num:"04", title:"Earn Fees", desc:"90% of all trades → you" },
+                { num:"04", title:"Earn Fees", desc:"70% of all trades → you" },
               ].map(step=>(
                 <div key={step.num} style={{ display:"flex", gap:12, marginBottom:12, alignItems:"flex-start" }}>
                   <span style={{ fontFamily:S.mono, fontSize:10, color:S.purpleL, background:S.purpleD, border:S.borderB, padding:"2px 7px", borderRadius:4, flexShrink:0, marginTop:1 }}>{step.num}</span>
