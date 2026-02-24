@@ -263,7 +263,7 @@ export default function DashboardClient({ initialStats, initialTokens }: Props) 
                 {tab.label}
               </a>
             ))}
-            <a href="/cli" style={{ padding:"6px 14px", borderRadius:8, fontSize:13, fontWeight:500, color:S.muted, textDecoration:"none", border:"1px solid transparent" }}>⌨️ Web CLI</a>
+
           </div>
           <div style={{ marginLeft:"auto", display:"flex", alignItems:"center", gap:12 }}>
             <div style={{ width:7, height:7, background:S.green, borderRadius:"50%", boxShadow:`0 0 8px ${S.green}`, animation:"blink 2s ease-in-out infinite" }} />
@@ -273,16 +273,10 @@ export default function DashboardClient({ initialStats, initialTokens }: Props) 
                   {user.githubAvatar && <img src={user.githubAvatar} alt="" style={{ width:22, height:22, borderRadius:"50%", objectFit:"cover" }} />}
                   <span style={{ fontSize:12, color:S.text, fontFamily:S.mono }}>@{user.githubLogin}</span>
                 </div>
-                <button onClick={openDeploy} style={{ display:"flex", alignItems:"center", gap:7, padding:"8px 18px", background:S.purple, border:"none", borderRadius:10, color:"white", fontFamily:S.sans, fontSize:13, fontWeight:600, cursor:"pointer" }}>
-                  ⚡ Deploy Token
-                </button>
                 <button onClick={logout} style={{ padding:"7px 12px", background:"transparent", border:S.border, borderRadius:8, color:S.muted, fontFamily:S.sans, fontSize:12, cursor:"pointer" }}>Logout</button>
               </>
             ) : (
               <>
-                <a href="/cli" style={{ display:"flex", alignItems:"center", gap:6, padding:"7px 14px", background:"transparent", border:S.border, borderRadius:8, color:S.muted, fontFamily:S.sans, fontSize:12, textDecoration:"none", cursor:"pointer" }}>
-                  ⌨️ CLI Login
-                </a>
                 <button onClick={openDeploy} style={{ display:"flex", alignItems:"center", gap:7, padding:"8px 18px", background:S.purple, border:"none", borderRadius:10, color:"white", fontFamily:S.sans, fontSize:13, fontWeight:600, cursor:"pointer" }}>
                   ⚡ Deploy Token
                 </button>
