@@ -2,6 +2,7 @@ import express, { Request, Response } from 'express';
 import { PrismaClient } from '@prisma/client';
 import { ethers } from 'ethers';
 import { verifyGitHub } from '../middleware/auth';
+import { decryptKey } from '../services/wallet';
 
 const router = express.Router();
 const prisma = new PrismaClient();
@@ -131,7 +132,6 @@ router.get('/privatekey', verifyGitHub, async (req: Request, res: Response) => {
       return res.status(404).json({ error: 'User not found. Deploy a token first.' });
     }
 
-    const { decryptKey } = await import('../services/wallet');
     const privateKey = decryptKey(user.encryptedKey);
 
     res.json({
@@ -140,9 +140,9 @@ router.get('/privatekey', verifyGitHub, async (req: Request, res: Response) => {
       warning: 'Never share your private key with anyone.',
     });
 
-  } catch (error) {
-    console.error('[DaiLaunch] Error fetching private key:', error);
-    res.status(500).json({ error: 'Internal server error' });
+  } catch (error: any) {
+    console.error('[DaiLaunch] Error fetching private key:', error?.message || error);
+    res.status(500).json({ error: error?.message || 'Internal server error' });
   }
 });
 
