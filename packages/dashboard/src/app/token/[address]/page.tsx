@@ -7,9 +7,10 @@ export const dynamic = 'force-dynamic';
 export default async function TokenPage({
   params,
 }: {
-  params: { address: string };
+  params: Promise<{ address: string }>;
 }) {
-  const token = await getToken(params.address);
+  const { address } = await params;
+  const token = await getToken(address);
   if (!token) notFound();
 
   return <TokenDetailClient token={token} />;
