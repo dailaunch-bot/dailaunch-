@@ -3,4 +3,4 @@ builder = "DOCKERFILE"
 dockerfilePath = "Dockerfile"
 
 [deploy]
-startCommand = "npx ts-node --transpile-only src/index.ts"
+startCommand = "npm run build && node dist/index.js"
