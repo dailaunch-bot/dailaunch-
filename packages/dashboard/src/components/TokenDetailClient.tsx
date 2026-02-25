@@ -16,7 +16,18 @@ function shortAddr(a: string) { return a?`${a.slice(0,6)}…${a.slice(-4)}`:""; 
 function timeAgo(d: string) { const s=Math.floor((Date.now()-new Date(d).getTime())/1000); if(s<60)return`${s}s ago`; if(s<3600)return`${Math.floor(s/60)}m ago`; if(s<86400)return`${Math.floor(s/3600)}h ago`; return`${Math.floor(s/86400)}d ago`; }
 function avatarColor(a: string) { const c=["#4c1d95","#1e3a8a","#14532d","#7c2d12","#1e3a5f","#6b21a8","#164e63","#713f12","#3b0764","#0c4a6e"]; return c[(a?.charCodeAt(2)??0)%c.length]; }
 
-// ─── DexScreener types ───────────────────────────────────────────────
+function ensureUrl(url: string): string {
+  if (!url) return url;
+  if (url.startsWith('http://') || url.startsWith('https://')) return url;
+  return `https://${url}`;
+}
+
+function ensureTwitterUrl(t: string): string {
+  if (!t) return '';
+  if (t.startsWith('http://') || t.startsWith('https://')) return t;
+  return `https://twitter.com/${t.replace('@', '')}`;
+}
+
 interface DexPair {
   priceUsd: string;
   priceChange: { h24: number };
@@ -26,9 +37,8 @@ interface DexPair {
   fdv?: number;
 }
 
-// Timeframe → DexScreener resolution mapping
 const TF_RES: Record<string, string> = {
-  "1m": "1",   // 1-min candles
+  "1m": "1",
   "5m": "5",
   "1h": "60",
   "4h": "240",
@@ -129,67 +139,36 @@ export default function TokenDetailClient({ token }: { token: Token }) {
 
   const ca = token.contractAddress;
 
-  // ── Fetch candle data dari DexScreener ──────────────────────────────
   const fetchCandles = useCallback(async (timeframe: string) => {
     setLoading(true);
     try {
-      const res = await fetch(
-        `https://api.dexscreener.com/latest/dex/tokens/${ca}`
-      );
+      const res = await fetch(`https://api.dexscreener.com/latest/dex/tokens/${ca}`);
       const data = await res.json();
       const pairs: DexPair[] = data?.pairs ?? [];
-
-      // Ambil pair Base dengan liquidity terbesar
       const basePairs = pairs.filter((p: any) => p.chainId === "base");
-      if (!basePairs.length) {
-        setDexFound(false);
-        setLoading(false);
-        return;
-      }
+      if (!basePairs.length) { setDexFound(false); setLoading(false); return; }
       setDexFound(true);
-
-      const best: any = basePairs.sort((a: any, b: any) =>
-        (b.liquidity?.usd ?? 0) - (a.liquidity?.usd ?? 0)
-      )[0];
-
-      // Update stats live
+      const best: any = basePairs.sort((a: any, b: any) => (b.liquidity?.usd ?? 0) - (a.liquidity?.usd ?? 0))[0];
       const price = parseFloat(best.priceUsd ?? "0");
       setLivePrice(price);
       setLiveChange(best.priceChange?.h24 ?? 0);
       setLiveMc(best.marketCap ?? best.fdv ?? 0);
       setLiveVol(best.volume?.h24 ?? 0);
       setLiveLiq(best.liquidity?.usd ?? 0);
-
-      // Fetch OHLCV candles dari DexScreener chart endpoint
       const pairAddr = best.pairAddress;
-      const res2 = await fetch(
-        `https://api.dexscreener.com/latest/dex/candles/base/${pairAddr}?from=0&resolution=${TF_RES[timeframe] ?? "5"}`
-      );
+      const res2 = await fetch(`https://api.dexscreener.com/latest/dex/candles/base/${pairAddr}?from=0&resolution=${TF_RES[timeframe] ?? "5"}`);
       if (res2.ok) {
         const candleData = await res2.json();
         const candles = candleData?.candles ?? [];
         if (candles.length > 0) {
-          // Ambil close price dari tiap candle, max sesuai TF_LIMIT
           const limit = TF_LIMIT[timeframe] ?? 48;
-          const closePrices: number[] = candles
-            .slice(-limit)
-            .map((c: any) => parseFloat(c.c ?? c.close ?? "0"))
-            .filter((v: number) => v > 0);
-          if (closePrices.length > 1) {
-            setPrices(closePrices);
-            setLoading(false);
-            return;
-          }
+          const closePrices: number[] = candles.slice(-limit).map((c: any) => parseFloat(c.c ?? c.close ?? "0")).filter((v: number) => v > 0);
+          if (closePrices.length > 1) { setPrices(closePrices); setLoading(false); return; }
         }
       }
-
-      // Fallback: kalau candle endpoint tidak tersedia,
-      // buat array dari priceChange24h sebagai estimasi sederhana
       const open = price / (1 + (best.priceChange?.h24 ?? 0) / 100);
       const steps = TF_LIMIT[timeframe] ?? 48;
-      const fallback: number[] = Array.from({ length: steps }, (_, i) => {
-        return open + (price - open) * (i / (steps - 1));
-      });
+      const fallback: number[] = Array.from({ length: steps }, (_, i) => open + (price - open) * (i / (steps - 1)));
       setPrices(fallback);
     } catch (err) {
       console.error("DexScreener fetch error:", err);
@@ -198,14 +177,8 @@ export default function TokenDetailClient({ token }: { token: Token }) {
     setLoading(false);
   }, [ca]);
 
-  // Fetch awal
   useEffect(() => { fetchCandles(tf); }, [tf]);
-
-  // Auto-refresh setiap 30 detik (update price + candle terbaru)
-  useEffect(() => {
-    const iv = setInterval(() => fetchCandles(tf), 30_000);
-    return () => clearInterval(iv);
-  }, [tf, fetchCandles]);
+  useEffect(() => { const iv = setInterval(() => fetchCandles(tf), 30_000); return () => clearInterval(iv); }, [tf, fetchCandles]);
 
   const isUp = liveChange >= 0;
   const avColor = avatarColor(ca);
@@ -387,9 +360,9 @@ export default function TokenDetailClient({ token }: { token: Token }) {
                   {[
                     {icon:"🔍",label:"BaseScan",href:`https://basescan.org/token/${ca}`},
                     {icon:"📊",label:"DexScreener",href:`https://dexscreener.com/base/${ca}`},
-                    token.githubRepo?{icon:"🐙",label:"GitHub Repo",href:token.githubRepo}:null,
-                    token.website?{icon:"🌐",label:"Website",href:token.website}:null,
-                    token.twitter?{icon:"🐦",label:"Twitter / X",href:`https://twitter.com/${token.twitter}`}:null,
+                    token.githubRepo?{icon:"🐙",label:"GitHub Repo",href:ensureUrl(token.githubRepo)}:null,
+                    token.website?{icon:"🌐",label:"Website",href:ensureUrl(token.website)}:null,
+                    token.twitter?{icon:"🐦",label:"Twitter / X",href:ensureTwitterUrl(token.twitter)}:null,
                   ].filter(Boolean).map((l: any)=>(
                     <a key={l.label} href={l.href} target="_blank" rel="noopener noreferrer"
                       style={{display:"flex",alignItems:"center",gap:7,padding:"7px 9px",background:"rgba(255,255,255,0.03)",border:S.border,borderRadius:7,color:S.muted,textDecoration:"none",fontSize:11,fontFamily:S.sans,transition:"color 0.15s"}}
