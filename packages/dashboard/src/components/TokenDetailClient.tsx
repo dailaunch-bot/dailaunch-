@@ -237,14 +237,14 @@ export default function TokenDetailClient({ token }: { token: Token }) {
                   </div>
                 </div>
                 <div style={{marginTop:9,padding:"5px 9px",background:"rgba(0,217,139,0.06)",border:"1px solid rgba(0,217,139,0.15)",borderRadius:5,fontSize:10,color:S.green,fontFamily:S.mono,textAlign:"center"}}>
-                  💰 Earning 90% of all trading fees
+                  💰 Earning 70% of all trading fees
                 </div>
               </div>
 
               {/* Token Info */}
               <div style={{background:S.surface,border:S.border,borderRadius:10,padding:14}}>
                 <div style={{fontSize:9,fontFamily:S.mono,color:S.dim,textTransform:"uppercase",letterSpacing:"0.1em",marginBottom:10}}>Token Info</div>
-                {[["Price",fmtP(livePrice)],["Created",timeAgo(token.deployedAt)],["Chain","Base Mainnet"],["Standard","ERC-20"],["Creator Fee","90% of all trades"]].map(([k,v])=>(
+                {[["Price",fmtP(livePrice)],["Created",timeAgo(token.deployedAt)],["Chain","Base Mainnet"],["Standard","ERC-20"],["Creator Fee","70% of all trades"]].map(([k,v])=>(
                   <div key={k} style={{display:"flex",justifyContent:"space-between",padding:"5px 0",borderBottom:S.border,fontSize:11}}>
                     <span style={{color:S.muted,fontFamily:S.mono}}>{k}</span>
                     <span style={{color:k==="Creator Fee"?S.green:S.text,fontFamily:S.mono}}>{v}</span>
