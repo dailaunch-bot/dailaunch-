@@ -1,10 +1,13 @@
-import { Clanker } from 'clanker-sdk/v4';
+// ✅ Fix: import CommonJS module dengan require() bukan import
 import { createWalletClient, createPublicClient, http } from 'viem';
 import { privateKeyToAccount } from 'viem/accounts';
 import { base } from 'viem/chains';
 
-const CREATOR_BPS  = 7_500; // 75% of 80% remaining = 60% of total swap fee
-const PLATFORM_BPS = 2_500; // 25% of 80% remaining = 20% of total swap fee
+// eslint-disable-next-line @typescript-eslint/no-var-requires
+const { Clanker } = require('clanker-sdk/v4');
+
+const CREATOR_BPS  = 7_500;
+const PLATFORM_BPS = 2_500;
 
 const account = privateKeyToAccount(
   process.env.PLATFORM_PRIVATE_KEY as `0x${string}`
@@ -89,7 +92,6 @@ export async function deployTokenViaClanker(params: DeployParams): Promise<Deplo
     error              = result.error;
   } catch (deployErr: any) {
     console.error('[DaiLaunch] clanker.deploy() threw exception:', deployErr);
-    console.error('[DaiLaunch] Full error:', JSON.stringify(deployErr, Object.getOwnPropertyNames(deployErr)));
     throw new Error(`Clanker deploy exception: ${deployErr?.message || JSON.stringify(deployErr)}`);
   }
 
