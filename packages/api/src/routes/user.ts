@@ -13,7 +13,6 @@ let lastPriceFetch = 0;
 
 async function getEthPriceUsd(): Promise<number> {
   const now = Date.now();
-  // Use cache if < 60 seconds old
   if (cachedEthPrice > 0 && now - lastPriceFetch < 60_000) {
     return cachedEthPrice;
   }
@@ -25,7 +24,8 @@ async function getEthPriceUsd(): Promise<number> {
         signal: AbortSignal.timeout(5000),
       }
     );
-    const data = await res.json();
+    // ✅ Fix: cast ke any agar TypeScript tidak error
+    const data = await res.json() as any;
     const price = data?.ethereum?.usd;
     if (price && price > 0) {
       cachedEthPrice = price;
@@ -36,7 +36,6 @@ async function getEthPriceUsd(): Promise<number> {
   } catch (err) {
     console.warn('[DaiLaunch] CoinGecko fetch failed:', err);
   }
-  // Fallback: env var or last known cache
   return cachedEthPrice || parseFloat(process.env.ETH_PRICE_FALLBACK || '3400');
 }
 
@@ -58,7 +57,6 @@ router.get('/me', verifyGitHub, async (req: Request, res: Response) => {
       return res.status(404).json({ error: 'User not found. Deploy a token first.' });
     }
 
-    // Fetch deployed tokens for this user
     const tokens = await prisma.token.findMany({
       where: { deployer: ghUser.login },
       select: {
@@ -72,7 +70,6 @@ router.get('/me', verifyGitHub, async (req: Request, res: Response) => {
       orderBy: { deployedAt: 'desc' },
     });
 
-    // Fetch ETH balance + real-time price in parallel
     let balance = '0.000000';
     let balanceUsd = '0.00';
     let ethPriceUsd = 0;
