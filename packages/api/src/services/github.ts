@@ -6,29 +6,52 @@ interface SaveTokenParams {
   name: string;
   symbol: string;
   contractAddress: string;
+  creatorWallet: string;
+  txHash: string;
+  twitter?: string;
+  website?: string;
+  logoUrl?: string;
   repoName?: string;
 }
 
 export async function saveTokenToGitHub(params: SaveTokenParams): Promise<string> {
   const repoName = params.repoName || `token-${params.symbol.toLowerCase()}-${Date.now()}`;
 
-  const metaContent = Buffer.from(
-    JSON.stringify(
-      {
-        name: params.name,
-        symbol: params.symbol,
-        contractAddress: params.contractAddress,
-        network: 'Base',
-        deployedAt: new Date().toISOString(),
-      },
-      null,
-      2
-    )
-  ).toString('base64');
+  const tokenInfo = {
+    name: params.name,
+    symbol: params.symbol,
+    contractAddress: params.contractAddress,
+    creatorWallet: params.creatorWallet,
+    txHash: params.txHash,
+    twitter: params.twitter || null,
+    website: params.website || null,
+    logoUrl: params.logoUrl || null,
+    network: 'Base',
+    deployedAt: new Date().toISOString(),
+  };
 
-  const readmeContent = Buffer.from(
-    `# ${params.name} (${params.symbol})\n\nDeployed on Base via DaiLaunch\n\n**Contract:** \`${params.contractAddress}\``
-  ).toString('base64');
+  const metaContent = Buffer.from(JSON.stringify(tokenInfo, null, 2)).toString('base64');
+
+  const readmeLines = [
+    `# ${params.name} (${params.symbol})`,
+    ``,
+    `Deployed on **Base Mainnet** via [DaiLaunch](https://dailaunch.online)`,
+    ``,
+    `## Token Info`,
+    `| Field | Value |`,
+    `|-------|-------|`,
+    `| Contract | \`${params.contractAddress}\` |`,
+    `| Creator Wallet | \`${params.creatorWallet}\` |`,
+    `| TX Hash | \`${params.txHash}\` |`,
+    params.twitter ? `| Twitter | [@${params.twitter}](https://twitter.com/${params.twitter}) |` : '',
+    params.website ? `| Website | ${params.website} |` : '',
+    ``,
+    `## Links`,
+    `- [BaseScan](https://basescan.org/token/${params.contractAddress})`,
+    `- [DexScreener](https://dexscreener.com/base/${params.contractAddress})`,
+  ].filter(l => l !== '').join('\n');
+
+  const readmeContent = Buffer.from(readmeLines).toString('base64');
 
   // Buat repo
   await params.octokit.repos.createForAuthenticatedUser({
@@ -59,5 +82,5 @@ export async function saveTokenToGitHub(params: SaveTokenParams): Promise<string
     content: readmeContent,
   });
 
-  return repoName;
+  return `https://github.com/${params.githubUser}/${repoName}`;
 }
