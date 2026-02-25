@@ -15,7 +15,28 @@ function fmtP(n: number) { if(n<0.00001)return`$${n.toFixed(10)}`; if(n<0.01)ret
 function shortAddr(a: string) { return a?`${a.slice(0,6)}…${a.slice(-4)}`:""; }
 function timeAgo(d: string) { const s=Math.floor((Date.now()-new Date(d).getTime())/1000); if(s<60)return`${s}s ago`; if(s<3600)return`${Math.floor(s/60)}m ago`; if(s<86400)return`${Math.floor(s/3600)}h ago`; return`${Math.floor(s/86400)}d ago`; }
 function avatarColor(a: string) { const c=["#4c1d95","#1e3a8a","#14532d","#7c2d12","#1e3a5f","#6b21a8","#164e63","#713f12","#3b0764","#0c4a6e"]; return c[(a?.charCodeAt(2)??0)%c.length]; }
-function rnd(a: number, b: number) { return Math.random()*(b-a)+a; }
+
+// ─── DexScreener types ───────────────────────────────────────────────
+interface DexPair {
+  priceUsd: string;
+  priceChange: { h24: number };
+  liquidity?: { usd: number };
+  volume?: { h24: number };
+  marketCap?: number;
+  fdv?: number;
+}
+
+// Timeframe → DexScreener resolution mapping
+const TF_RES: Record<string, string> = {
+  "1m": "1",   // 1-min candles
+  "5m": "5",
+  "1h": "60",
+  "4h": "240",
+  "1D": "1440",
+};
+const TF_LIMIT: Record<string, number> = {
+  "1m": 60, "5m": 48, "1h": 40, "4h": 30, "1D": 20,
+};
 
 function PriceChart({ prices, isUp }: { prices: number[]; isUp: boolean }) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
@@ -24,7 +45,7 @@ function PriceChart({ prices, isUp }: { prices: number[]; isUp: boolean }) {
 
   const draw = useCallback(() => {
     const canvas = canvasRef.current;
-    if (!canvas || !prices.length) return;
+    if (!canvas || prices.length < 2) return;
     const ctx = canvas.getContext("2d")!;
     const W = canvas.offsetWidth || 600;
     const H = 250;
@@ -96,33 +117,100 @@ function PriceChart({ prices, isUp }: { prices: number[]; isUp: boolean }) {
 export default function TokenDetailClient({ token }: { token: Token }) {
   const router = useRouter();
   const [prices, setPrices] = useState<number[]>([]);
-  const [livePrice, setLivePrice] = useState(token.price||0.000003);
-  const [liveMc, setLiveMc] = useState(token.marketCap||0);
-  const [liveChange, setLiveChange] = useState(token.priceChange24h||0);
+  const [livePrice, setLivePrice] = useState(token.price || 0);
+  const [liveMc, setLiveMc] = useState(token.marketCap || 0);
+  const [liveVol, setLiveVol] = useState(token.tradeVolume || 0);
+  const [liveLiq, setLiveLiq] = useState(token.liquidity || 0);
+  const [liveChange, setLiveChange] = useState(token.priceChange24h || 0);
   const [copied, setCopied] = useState<string|null>(null);
-  const [tf, setTf] = useState("1m");
-  const tfPoints: Record<string,number> = {"1s":80,"1m":60,"5m":48,"1h":40,"4h":30,"1D":20};
+  const [tf, setTf] = useState("5m");
+  const [loading, setLoading] = useState(true);
+  const [dexFound, setDexFound] = useState(true);
 
-  const genPrices = useCallback((base: number, n: number) => {
-    let p=base||rnd(0.0000001,0.05); const arr: number[]=[];
-    for(let i=0;i<n;i++){p=Math.max(1e-12,p*(1+rnd(-0.04,0.05)));arr.push(p);}
-    setPrices(arr);
-  },[]);
+  const ca = token.contractAddress;
 
-  useEffect(()=>{genPrices(livePrice,60);},[]);
-  useEffect(()=>{
-    const iv=setInterval(()=>{
-      setLivePrice(p=>{const np=Math.max(1e-12,p*(1+rnd(-0.03,0.04)));setPrices(prev=>[...prev.slice(-119),np]);return np;});
-      setLiveMc(m=>m*(1+rnd(-0.01,0.015)));
-      setLiveChange(c=>parseFloat((c+rnd(-0.5,0.7)).toFixed(1)));
-    },1500);
-    return()=>clearInterval(iv);
-  },[]);
+  // ── Fetch candle data dari DexScreener ──────────────────────────────
+  const fetchCandles = useCallback(async (timeframe: string) => {
+    setLoading(true);
+    try {
+      const res = await fetch(
+        `https://api.dexscreener.com/latest/dex/tokens/${ca}`
+      );
+      const data = await res.json();
+      const pairs: DexPair[] = data?.pairs ?? [];
 
-  const isUp=liveChange>=0;
-  const avColor=avatarColor(token.contractAddress);
-  const copy=(text: string,key: string)=>{
-    try{navigator.clipboard.writeText(text).then(()=>{setCopied(key);setTimeout(()=>setCopied(null),1500);});}catch(e){}
+      // Ambil pair Base dengan liquidity terbesar
+      const basePairs = pairs.filter((p: any) => p.chainId === "base");
+      if (!basePairs.length) {
+        setDexFound(false);
+        setLoading(false);
+        return;
+      }
+      setDexFound(true);
+
+      const best: any = basePairs.sort((a: any, b: any) =>
+        (b.liquidity?.usd ?? 0) - (a.liquidity?.usd ?? 0)
+      )[0];
+
+      // Update stats live
+      const price = parseFloat(best.priceUsd ?? "0");
+      setLivePrice(price);
+      setLiveChange(best.priceChange?.h24 ?? 0);
+      setLiveMc(best.marketCap ?? best.fdv ?? 0);
+      setLiveVol(best.volume?.h24 ?? 0);
+      setLiveLiq(best.liquidity?.usd ?? 0);
+
+      // Fetch OHLCV candles dari DexScreener chart endpoint
+      const pairAddr = best.pairAddress;
+      const res2 = await fetch(
+        `https://api.dexscreener.com/latest/dex/candles/base/${pairAddr}?from=0&resolution=${TF_RES[timeframe] ?? "5"}`
+      );
+      if (res2.ok) {
+        const candleData = await res2.json();
+        const candles = candleData?.candles ?? [];
+        if (candles.length > 0) {
+          // Ambil close price dari tiap candle, max sesuai TF_LIMIT
+          const limit = TF_LIMIT[timeframe] ?? 48;
+          const closePrices: number[] = candles
+            .slice(-limit)
+            .map((c: any) => parseFloat(c.c ?? c.close ?? "0"))
+            .filter((v: number) => v > 0);
+          if (closePrices.length > 1) {
+            setPrices(closePrices);
+            setLoading(false);
+            return;
+          }
+        }
+      }
+
+      // Fallback: kalau candle endpoint tidak tersedia,
+      // buat array dari priceChange24h sebagai estimasi sederhana
+      const open = price / (1 + (best.priceChange?.h24 ?? 0) / 100);
+      const steps = TF_LIMIT[timeframe] ?? 48;
+      const fallback: number[] = Array.from({ length: steps }, (_, i) => {
+        return open + (price - open) * (i / (steps - 1));
+      });
+      setPrices(fallback);
+    } catch (err) {
+      console.error("DexScreener fetch error:", err);
+      setDexFound(false);
+    }
+    setLoading(false);
+  }, [ca]);
+
+  // Fetch awal
+  useEffect(() => { fetchCandles(tf); }, [tf]);
+
+  // Auto-refresh setiap 30 detik (update price + candle terbaru)
+  useEffect(() => {
+    const iv = setInterval(() => fetchCandles(tf), 30_000);
+    return () => clearInterval(iv);
+  }, [tf, fetchCandles]);
+
+  const isUp = liveChange >= 0;
+  const avColor = avatarColor(ca);
+  const copy = (text: string, key: string) => {
+    try { navigator.clipboard.writeText(text).then(() => { setCopied(key); setTimeout(() => setCopied(null), 1500); }); } catch(e) {}
   };
 
   const S={
@@ -141,6 +229,7 @@ export default function TokenDetailClient({ token }: { token: Token }) {
         *{box-sizing:border-box;}
         @keyframes blink{0%,100%{opacity:1}50%{opacity:0.25}}
         @keyframes fadeIn{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}
+        @keyframes spin{to{transform:rotate(360deg)}}
         .fi{animation:fadeIn 0.4s ease forwards;}
         ::-webkit-scrollbar{width:4px;} ::-webkit-scrollbar-track{background:#07070f;} ::-webkit-scrollbar-thumb{background:rgba(120,60,255,0.2);border-radius:2px;}
       `}</style>
@@ -159,7 +248,8 @@ export default function TokenDetailClient({ token }: { token: Token }) {
           <span style={{color:S.dim,fontSize:13}}>›</span>
           <span style={{fontSize:13,fontWeight:600,fontFamily:S.mono,color:S.text}}>${token.symbol}</span>
           <div style={{marginLeft:"auto",display:"flex",alignItems:"center",gap:6,padding:"4px 10px",borderRadius:20,background:"rgba(0,217,139,0.1)",border:"1px solid rgba(0,217,139,0.25)",fontSize:11,fontFamily:S.mono,color:S.green}}>
-            <div style={{width:6,height:6,background:S.green,borderRadius:"50%",boxShadow:`0 0 7px ${S.green}`,animation:"blink 2s ease-in-out infinite"}}/>Live
+            <div style={{width:6,height:6,background:S.green,borderRadius:"50%",boxShadow:`0 0 7px ${S.green}`,animation:"blink 2s ease-in-out infinite"}}/>
+            {dexFound ? "Live · DexScreener" : "Live"}
           </div>
         </nav>
 
@@ -177,16 +267,23 @@ export default function TokenDetailClient({ token }: { token: Token }) {
                 <span style={{fontSize:13,color:S.muted}}>{token.name}</span>
               </div>
               <div style={{display:"flex",alignItems:"center",gap:10,marginTop:5,flexWrap:"wrap"}}>
-                <span style={{fontSize:22,fontWeight:700,color:S.text,fontFamily:S.mono}}>{fmtP(livePrice)}</span>
+                <span style={{fontSize:22,fontWeight:700,color:S.text,fontFamily:S.mono}}>
+                  {livePrice > 0 ? fmtP(livePrice) : "—"}
+                </span>
                 <span style={{fontSize:12,fontWeight:700,fontFamily:S.mono,padding:"2px 7px",borderRadius:5,color:isUp?S.green:S.red,background:isUp?"rgba(0,217,139,0.1)":"rgba(255,61,90,0.1)"}}>
                   {isUp?"+":""}{liveChange.toFixed(1)}%
                 </span>
+                {!dexFound && (
+                  <span style={{fontSize:10,color:S.muted,fontFamily:S.mono}}>
+                    ⚠️ Belum ada liquidity di DexScreener
+                  </span>
+                )}
               </div>
               <div style={{fontSize:11,color:S.muted,marginTop:3,fontFamily:S.mono}}>
                 Deployed by <span style={{color:S.purpleL}}>@{token.deployer}</span> · {timeAgo(token.deployedAt)}
               </div>
             </div>
-            <a href={`https://app.uniswap.org/swap?outputCurrency=${token.contractAddress}&chain=base`}
+            <a href={`https://app.uniswap.org/swap?outputCurrency=${ca}&chain=base`}
               target="_blank" rel="noopener noreferrer"
               style={{padding:"9px 18px",background:S.purple,borderRadius:10,color:"white",fontFamily:S.sans,fontWeight:700,fontSize:13,textDecoration:"none",flexShrink:0}}>
               🔄 Trade
@@ -196,10 +293,10 @@ export default function TokenDetailClient({ token }: { token: Token }) {
           {/* Stats */}
           <div style={{display:"grid",gridTemplateColumns:"repeat(4,1fr)",gap:10,marginBottom:16}}>
             {[
-              {l:"Market Cap",v:fmtU(liveMc),s:"USD"},
+              {l:"Market Cap",v:liveMc>0?fmtU(liveMc):"—",s:"USD"},
               {l:"Holders",v:token.holders>0?token.holders.toLocaleString():"—",s:"wallets"},
-              {l:"Liquidity",v:token.liquidity>0?fmtU(token.liquidity):"—",s:"in pool"},
-              {l:"Volume 24h",v:token.tradeVolume>0?fmtU(token.tradeVolume):"—",s:"trading"},
+              {l:"Liquidity",v:liveLiq>0?fmtU(liveLiq):"—",s:"in pool"},
+              {l:"Volume 24h",v:liveVol>0?fmtU(liveVol):"—",s:"trading"},
             ].map(s=>(
               <div key={s.l} className="fi" style={{background:S.surface,border:S.border,borderRadius:10,padding:"12px 14px"}}>
                 <div style={{fontSize:9,fontFamily:S.mono,color:S.dim,textTransform:"uppercase",letterSpacing:"0.1em",marginBottom:3}}>{s.l}</div>
@@ -213,16 +310,38 @@ export default function TokenDetailClient({ token }: { token: Token }) {
           <div style={{display:"grid",gridTemplateColumns:"1fr 290px",gap:14}}>
             <div style={{background:S.surface,border:S.border,borderRadius:12,overflow:"hidden"}}>
               <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",padding:"12px 16px",borderBottom:S.border}}>
-                <span style={{fontSize:11,fontFamily:S.mono,color:S.dim,textTransform:"uppercase",letterSpacing:"0.1em"}}>Price Chart</span>
+                <div style={{display:"flex",alignItems:"center",gap:8}}>
+                  <span style={{fontSize:11,fontFamily:S.mono,color:S.dim,textTransform:"uppercase",letterSpacing:"0.1em"}}>Price Chart</span>
+                  {loading && (
+                    <div style={{width:12,height:12,border:"2px solid rgba(120,60,255,0.3)",borderTopColor:S.purpleL,borderRadius:"50%",animation:"spin 0.8s linear infinite"}}/>
+                  )}
+                  {!loading && dexFound && (
+                    <span style={{fontSize:9,color:S.green,fontFamily:S.mono}}>● DexScreener</span>
+                  )}
+                </div>
                 <div style={{display:"flex",gap:4}}>
-                  {["1s","1m","5m","1h","4h","1D"].map(t=>(
-                    <button key={t} onClick={()=>{setTf(t);genPrices(livePrice,tfPoints[t]);}}
+                  {["1m","5m","1h","4h","1D"].map(t=>(
+                    <button key={t} onClick={()=>setTf(t)}
                       style={{padding:"3px 7px",borderRadius:4,fontSize:10,fontFamily:S.mono,cursor:"pointer",
                         border:S.border,background:tf===t?S.purpleD:"transparent",color:tf===t?S.purpleL:S.muted}}>{t}</button>
                   ))}
                 </div>
               </div>
-              <div style={{padding:"10px 10px 6px"}}><PriceChart prices={prices} isUp={isUp}/></div>
+              <div style={{padding:"10px 10px 6px"}}>
+                {loading && prices.length === 0 ? (
+                  <div style={{height:250,display:"flex",alignItems:"center",justifyContent:"center",color:S.muted,fontSize:12,fontFamily:S.mono}}>
+                    Loading chart data...
+                  </div>
+                ) : !dexFound ? (
+                  <div style={{height:250,display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",gap:8,color:S.muted,fontSize:12,fontFamily:S.mono}}>
+                    <span style={{fontSize:24}}>📊</span>
+                    <span>Token belum terdaftar di DexScreener</span>
+                    <span style={{fontSize:10,color:S.dim}}>Chart akan muncul setelah ada liquidity pool</span>
+                  </div>
+                ) : (
+                  <PriceChart prices={prices} isUp={isUp}/>
+                )}
+              </div>
             </div>
 
             <div style={{display:"flex",flexDirection:"column",gap:10}}>
@@ -244,13 +363,13 @@ export default function TokenDetailClient({ token }: { token: Token }) {
               {/* Token Info */}
               <div style={{background:S.surface,border:S.border,borderRadius:10,padding:14}}>
                 <div style={{fontSize:9,fontFamily:S.mono,color:S.dim,textTransform:"uppercase",letterSpacing:"0.1em",marginBottom:10}}>Token Info</div>
-                {[["Price",fmtP(livePrice)],["Created",timeAgo(token.deployedAt)],["Chain","Base Mainnet"],["Standard","ERC-20"],["Creator Fee","70% of all trades"]].map(([k,v])=>(
+                {[["Price",livePrice>0?fmtP(livePrice):"—"],["Created",timeAgo(token.deployedAt)],["Chain","Base Mainnet"],["Standard","ERC-20"],["Creator Fee","70% of all trades"]].map(([k,v])=>(
                   <div key={k} style={{display:"flex",justifyContent:"space-between",padding:"5px 0",borderBottom:S.border,fontSize:11}}>
                     <span style={{color:S.muted,fontFamily:S.mono}}>{k}</span>
                     <span style={{color:k==="Creator Fee"?S.green:S.text,fontFamily:S.mono}}>{v}</span>
                   </div>
                 ))}
-                {[["CA",token.contractAddress,"ca"],["Creator",token.creatorWallet,"cr"]].map(([k,v,id])=>(
+                {[["CA",ca,"ca"],["Creator",token.creatorWallet,"cr"]].map(([k,v,id])=>(
                   <div key={k} style={{display:"flex",justifyContent:"space-between",alignItems:"center",padding:"5px 0",borderBottom:id==="ca"?S.border:"none",fontSize:11}}>
                     <span style={{color:S.muted,fontFamily:S.mono}}>{k}</span>
                     <div style={{display:"flex",alignItems:"center",gap:5}}>
@@ -266,8 +385,8 @@ export default function TokenDetailClient({ token }: { token: Token }) {
                 <div style={{fontSize:9,fontFamily:S.mono,color:S.dim,textTransform:"uppercase",letterSpacing:"0.1em",marginBottom:10}}>Links</div>
                 <div style={{display:"flex",flexDirection:"column",gap:5}}>
                   {[
-                    {icon:"🔍",label:"BaseScan",href:`https://basescan.org/token/${token.contractAddress}`},
-                    {icon:"📊",label:"DexScreener",href:`https://dexscreener.com/base/${token.contractAddress}`},
+                    {icon:"🔍",label:"BaseScan",href:`https://basescan.org/token/${ca}`},
+                    {icon:"📊",label:"DexScreener",href:`https://dexscreener.com/base/${ca}`},
                     token.githubRepo?{icon:"🐙",label:"GitHub Repo",href:token.githubRepo}:null,
                     token.website?{icon:"🌐",label:"Website",href:token.website}:null,
                     token.twitter?{icon:"🐦",label:"Twitter / X",href:`https://twitter.com/${token.twitter}`}:null,
